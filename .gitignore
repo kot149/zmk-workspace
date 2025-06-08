@@ -3,8 +3,6 @@
 .west
 modules
 firmware
-zephyr
+./zephyr
 zmk
 draw/base.yaml
-
-!boards/zephyr
