@@ -1,0 +1,4 @@
+name: roBa-boards
+build:
+  settings:
+    board_root: ..

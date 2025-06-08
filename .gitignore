@@ -6,3 +6,5 @@ firmware
 zephyr
 zmk
 draw/base.yaml
+
+!boards/zephyr
