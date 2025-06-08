@@ -5,6 +5,7 @@ config := absolute_path('config')
 build := absolute_path('.build')
 out := absolute_path('firmware')
 draw := absolute_path('draw')
+zmk_config := env_var_or_default('ZMK_CONFIG_NAME', 'zmk-config-roBa')
 
 # parse combos.dtsi and adjust settings to not run out of slots
 _parse_combos:
@@ -46,10 +47,18 @@ _build_single $board $shield $snippet *west_args:
     set -euo pipefail
     artifact="${shield:+${shield// /+}-}${board}"
     build_dir="{{ build / '$artifact' }}"
+    zmk_config_path="{{ config }}/{{ zmk_config }}"
 
     echo "Building firmware for $artifact..."
-    west build -s zmk/app -d "$build_dir" -b $board {{ west_args }} ${snippet:+-S "$snippet"} -- \
-        -DZMK_CONFIG="{{ config }}/zmk-config-roBa/config" -DZMK_EXTRA_MODULES="{{ config }}/zmk-config-roBa" ${shield:+-DSHIELD="$shield"}
+    
+    # Check if zephyr/module.yml exists to determine whether to include DZMK_EXTRA_MODULES
+    if [[ -f "$zmk_config_path/zephyr/module.yml" ]]; then
+        west build -s zmk/app -d "$build_dir" -b $board {{ west_args }} ${snippet:+-S "$snippet"} -- \
+            -DZMK_CONFIG="$zmk_config_path/config" -DZMK_EXTRA_MODULES="$zmk_config_path" ${shield:+-DSHIELD="$shield"}
+    else
+        west build -s zmk/app -d "$build_dir" -b $board {{ west_args }} ${snippet:+-S "$snippet"} -- \
+            -DZMK_CONFIG="$zmk_config_path/config" ${shield:+-DSHIELD="$shield"}
+    fi
 
     if [[ -f "$build_dir/zephyr/zmk.uf2" ]]; then
         mkdir -p "{{ out }}" && cp "$build_dir/zephyr/zmk.uf2" "{{ out }}/$artifact.uf2"
@@ -90,7 +99,7 @@ draw:
 
 # initialize west
 init:
-    west init -l config --mf zmk-config-roBa/config/west.yml
+    west init -l config --mf {{ zmk_config }}/config/west.yml
     west update --fetch-opt=--filter=blob:none
     west zephyr-export
 

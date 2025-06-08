@@ -1,4 +1,22 @@
-# urob's zmk-config
+# zmk-workspace
+
+This repository is a workspace for building ZMK firmware, based on [urob's zmk-config](https://github.com/urob/zmk-config).
+
+Difference from urob's zmk-config:
+- config is isolated per keyboard in `config/zmk-config-<keyboard>`
+  - Specify which keyboard to build with `ZMK_CONFIG_NAME` environment variable e.g. `ZMK_CONFIG_NAME=zmk-config-roBa just build roBa`
+  - keymap-drawer is not compatible with this setup for now
+
+## Usage
+
+### Local build environment
+
+1. See [urob's zmk-config README](#local-build-environment-1) for Nix and direnv setup.
+2. git clone your ZMK config into `config`.
+3. `ZMK_CONFIG_NAME=zmk-config-<keyboard> just init`
+4. `ZMK_CONFIG_NAME=zmk-config-<keyboard> just build [target]`
+
+# urob's zmk-config README
 
 This is my personal [ZMK firmware](https://github.com/zmkfirmware/zmk/)
 configuration. It consists of a 34-keys base layout that is re-used for various
