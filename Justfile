@@ -50,7 +50,7 @@ _build_single $board $shield $snippet *west_args:
     zmk_config_path="{{ config }}/{{ zmk_config }}"
 
     echo "Building firmware for $artifact..."
-    
+
     # Check if zephyr/module.yml exists to determine whether to include DZMK_EXTRA_MODULES
     if [[ -f "$zmk_config_path/zephyr/module.yml" ]]; then
         west build -s zmk/app -d "$build_dir" -b $board {{ west_args }} ${snippet:+-S "$snippet"} -- \
