@@ -1,6 +1,7 @@
 #include "roBa_L.keymap"
 
 #include <input/processors.dtsi>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
 / {
     /omit-if-no-ref/ zip_temp_layer: zip_temp_layer {
         compatible = "zmk,input-processor-temp-layer";
@@ -35,11 +36,13 @@
         auto-mouse-layer {
             layers = <DEFAULT MOUSE>;
             input-processors = <&zip_temp_layer MOUSE 10000>;
+            process-next;
         };
 
         disable-scroll-x {
             layers = <MEDIA>;
             input-processors = <&wheel_x_scaler 0 1>;
+            process-next;
         };
     };
 };
