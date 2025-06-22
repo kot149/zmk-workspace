@@ -39,7 +39,7 @@ _parse_targets $expr:
     #!/usr/bin/env bash
     attrs="[.board, .shield, .snippet]"
     filter="(($attrs | map(. // [.]) | combinations), ((.include // {})[] | $attrs)) | join(\",\")"
-    echo "$(yq -r "$filter" build.yaml | grep -v "^," | grep -i "${expr/#all/.*}")"
+    echo "$(yq -r "$filter" "{{ config }}/{{ zmk_config }}/build.yaml" | grep -v "^," | grep -i "${expr/#all/.*}")"
 
 # build firmware for single board & shield combination
 _build_single $board $shield $snippet *west_args:
