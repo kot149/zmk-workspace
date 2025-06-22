@@ -4,7 +4,7 @@ This repository is a workspace for building ZMK firmware, based on [urob's zmk-c
 
 Difference from urob's zmk-config:
 - config is isolated per keyboard in `config/zmk-config-<keyboard>`
-  - Specify which keyboard to build with `ZMK_CONFIG_NAME` environment variable e.g. `ZMK_CONFIG_NAME=zmk-config-roBa just build roBa`
+  - Specify which keyboard to build with `ZMK_CONFIG` environment variable e.g. `ZMK_CONFIG=zmk-config-roBa just build roBa`
   - keymap-drawer is not compatible with this setup for now
 - Automatically removes `.west` when `just init` is run
 - `just flash` is added to flash the firmware to the device from WSL (requires PowerShell script in config/zmk-config-<keyboard>/scripts/flash.ps1)

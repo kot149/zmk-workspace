@@ -5,7 +5,7 @@ config := absolute_path('config')
 build := absolute_path('.build')
 out := absolute_path('firmware')
 draw := absolute_path('draw')
-zmk_config := env_var_or_default('ZMK_CONFIG_NAME', 'zmk-config-roBa')
+zmk_config := env_var_or_default('ZMK_CONFIG', 'zmk-config-roBa')
 
 # parse combos.dtsi and adjust settings to not run out of slots
 _parse_combos:
