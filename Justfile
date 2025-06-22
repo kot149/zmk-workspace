@@ -117,9 +117,27 @@ upgrade-sdk:
     nix flake update --flake .
 
 # flash firmware for matching targets
-flash expr:
+flash expr *args:
     #!/usr/bin/env bash
     set -euo pipefail
+    
+    # Check if -r option is provided
+    rebuild=false
+    build_args=()
+    for arg in {{ args }}; do
+        if [[ "$arg" == "-r" ]]; then
+            rebuild=true
+        else
+            build_args+=("$arg")
+        fi
+    done
+    
+    # Rebuild if -r option was provided
+    if [[ "$rebuild" == "true" ]]; then
+        echo "Rebuilding before flashing..."
+        just build "{{ expr }}" "${build_args[@]}"
+    fi
+    
     target=$(just _parse_targets {{ expr }} | head -n 1)
 
     if [[ -z "$target" ]]; then
