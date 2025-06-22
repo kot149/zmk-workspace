@@ -7,7 +7,7 @@ Difference from urob's zmk-config:
   - Specify which keyboard to build with `ZMK_CONFIG` environment variable e.g. `ZMK_CONFIG=zmk-config-roBa just build roBa`
   - keymap-drawer is not compatible with this setup for now
 - Automatically removes `.west` when `just init` is run
-- `just flash` is added to flash the firmware to the device from WSL (requires PowerShell script in config/zmk-config-<keyboard>/scripts/flash.ps1)
+- `just flash` is added to flash the firmware to the device from WSL (requires PowerShell script at `config/zmk-config-<keyboard>/scripts/flash.ps1`)
 - ZMK, Zephyr, and zmk-configs are added as submodules
 
 ## Usage
