@@ -6,6 +6,8 @@ Difference from urob's zmk-config:
 - config is isolated per keyboard in `config/zmk-config-<keyboard>`
   - Specify which keyboard to build with `ZMK_CONFIG_NAME` environment variable e.g. `ZMK_CONFIG_NAME=zmk-config-roBa just build roBa`
   - keymap-drawer is not compatible with this setup for now
+- ZMK, Zephyr, and zmk-configs are added as submodules
+- Automatically removes `.west` when `just init` is run
 
 ## Usage
 
