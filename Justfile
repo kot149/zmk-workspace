@@ -99,6 +99,7 @@ draw:
 
 # initialize west
 init:
+    rm -rf .west
     west init -l config --mf {{ zmk_config }}/config/west.yml
     west update --fetch-opt=--filter=blob:none
     west zephyr-export
