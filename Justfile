@@ -116,6 +116,32 @@ update:
 upgrade-sdk:
     nix flake update --flake .
 
+# flash firmware for matching targets
+flash expr:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    target=$(just _parse_targets {{ expr }} | head -n 1)
+
+    if [[ -z "$target" ]]; then
+        echo "No matching targets found for expression '{{ expr }}'. Aborting..." >&2
+        exit 1
+    fi
+
+    IFS=, read -r board shield snippet <<< "$target"
+    artifact="${shield:+${shield// /+}-}${board}"
+    uf2_file="$artifact.uf2"
+    uf2_path="{{ out }}/$uf2_file"
+
+    if [[ ! -f "$uf2_path" ]]; then
+        echo "Firmware file '$uf2_path' not found. Please build it first with 'just build \"{{ expr }}\"'." >&2
+        exit 1
+    fi
+
+    echo "Flashing '$uf2_path'..."
+    win_build_dir=$(wslpath -w "{{ out }}")
+    pwsh.exe -ExecutionPolicy Bypass -File "{{ config }}/{{ zmk_config }}/scripts/flash.ps1" \
+        -BuildDir "$win_build_dir" -UF2File "$uf2_file"
+
 [no-cd]
 test $testpath *FLAGS:
     #!/usr/bin/env bash
