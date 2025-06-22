@@ -3,6 +3,4 @@
 .west
 modules
 firmware
-./zephyr
-zmk
 draw/base.yaml
