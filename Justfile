@@ -139,8 +139,7 @@ flash expr:
 
     echo "Flashing '$uf2_path'..."
     win_build_dir=$(wslpath -w "{{ out }}")
-    pwsh.exe -ExecutionPolicy Bypass -File "{{ config }}/{{ zmk_config }}/scripts/flash.ps1" \
-        -BuildDir "$win_build_dir" -UF2File "$uf2_file"
+    pwsh.exe -ExecutionPolicy Bypass -File flash.ps1 -BuildDir "$win_build_dir" -Uf2File "$uf2_file"
 
 [no-cd]
 test $testpath *FLAGS:

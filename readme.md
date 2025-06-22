@@ -7,7 +7,7 @@ Difference from urob's zmk-config:
   - Specify which keyboard to build with `ZMK_CONFIG` environment variable e.g. `ZMK_CONFIG=zmk-config-roBa just build roBa`
   - keymap-drawer is not compatible with this setup for now
 - Automatically removes `.west` when `just init` is run
-- `just flash` is added to flash the firmware to the device from WSL (requires PowerShell script at `config/zmk-config-<keyboard>/scripts/flash.ps1`)
+- `just flash` is added to flash the firmware to the device from WSL (requires PowerShell 7 installed)
 - ZMK, Zephyr, and zmk-configs are added as submodules
 
 ## Usage
@@ -16,8 +16,10 @@ Difference from urob's zmk-config:
 
 1. See [urob's zmk-config README](#local-build-environment-1) for Nix and direnv setup.
 2. git clone your ZMK config into `config`.
-3. `ZMK_CONFIG_NAME=zmk-config-<keyboard> just init`
-4. `ZMK_CONFIG_NAME=zmk-config-<keyboard> just build [target]`
+3. `export ZMK_CONFIG_NAME=zmk-config-<keyboard>`
+4. `just init`
+5. `just build [target]`
+6. `just flash [target]`
 
 # urob's zmk-config README
 
