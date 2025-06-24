@@ -10,7 +10,6 @@
       "extensions": [
         "ms-vscode.cpptools",
         "ms-vscode.cmake-tools",
-        "twxs.cmake",
         "ms-python.python",
         "ms-python.flake8",
         "jnoortheen.nix-ide",
