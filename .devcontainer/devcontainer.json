@@ -1,0 +1,46 @@
+{
+  "name": "ZMK Firmware Development",
+  "dockerFile": "Dockerfile",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "twxs.cmake",
+        "ms-python.python",
+        "ms-python.flake8",
+        "jnoortheen.nix-ide",
+        "arrterian.nix-env-selector",
+        "davidanson.vscode-markdownlint",
+        "yzhang.markdown-all-in-one"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "nix-develop": {
+            "path": "nix",
+            "args": ["develop", "--command", "bash"]
+          }
+        },
+        "cmake.configureOnOpen": false,
+        "C_Cpp.default.compilerPath": "/nix/store/*/bin/arm-zephyr-eabi-gcc",
+        "C_Cpp.default.includePath": [
+          "${workspaceFolder}/**",
+          "${workspaceFolder}/zmk/app/include/**",
+          "${workspaceFolder}/zephyr/include/**"
+        ]
+      }
+    }
+  },
+  "postCreateCommand": "direnv allow",
+  "postStartCommand": "if [ ! -d .west ]; then just init; fi",
+  "remoteUser": "root",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "workspaceFolder": "/workspace",
+  "forwardPorts": [],
+  "portsAttributes": {}
+}
