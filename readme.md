@@ -8,13 +8,14 @@ Difference from urob's zmk-config:
   - keymap-drawer is not compatible with this setup for now
 - `just flash` is added to flash the firmware to the device from WSL (requires PowerShell 7 installed on the host machine)
 - Automatically removes `.west` when `just init` is run
+- Dev Container support
 - ZMK, Zephyr, and zmk-configs are added as submodules
 
 ## Usage
 
 ### Local build environment
 
-1. See [urob's zmk-config README](https://github.com/urob/zmk-config#local-build-environment) for Nix and direnv setup
+1. See [urob's zmk-config README](https://github.com/urob/zmk-config#local-build-environment) for Nix and direnv setup, or use Dev Container
 2. git clone your ZMK config into `config`
    ```sh
    git clone https://github.com/your-username/zmk-config-your-keyboard config/zmk-config-your-keyboard

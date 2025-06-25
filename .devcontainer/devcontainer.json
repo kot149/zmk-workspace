@@ -1,0 +1,23 @@
+{
+  "name": "ZMK Development",
+  "image": "zmkfirmware/zmk-build-arm:3.5-branch",
+  "runArgs": ["--security-opt", "label=disable"],
+  "containerEnv": {
+    "WORKSPACE_DIR": "${containerWorkspaceFolder}",
+    "PROMPT_COMMAND": "history -a",
+    "ZMK_BUILD_DIR": "${containerWorkspaceFolder}/.build",
+    "ZMK_SRC_DIR": "${containerWorkspaceFolder}/zmk/app"
+  },
+  "workspaceFolder": "/zmk-workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/zmk-workspace,type=bind,consistency=cached",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-vscode.cpptools"],
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash"
+      }
+    }
+  },
+  "forwardPorts": [3000],
+  "postCreateCommand": "apt-get update && apt-get install -y just yq"
+}
