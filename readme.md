@@ -21,7 +21,7 @@ Difference from urob's zmk-config:
 
 1. Clone this repo
 1. See [VSCode Docs](https://code.visualstudio.com/docs/devcontainers/containers) for Dev Conainer usage. Or, see [urob's zmk-config README](https://github.com/urob/zmk-config#local-build-environment) for Nix and direnv setup
-2. git clone your ZMK config into `config`
+2. git clone your zmk-config into `config`
    ```sh
    cd config
    git clone https://github.com/your-username/zmk-config-your-keyboard
