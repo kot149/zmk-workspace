@@ -1,6 +1,6 @@
 {
   "name": "ZMK Development",
-  "image": "zmkfirmware/zmk-build-arm:3.5-branch",
+  "image": "zmkfirmware/zmk-build-arm:stable",
   "runArgs": ["--security-opt", "label=disable"],
   "containerEnv": {
     "WORKSPACE_DIR": "${containerWorkspaceFolder}",
