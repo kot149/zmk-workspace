@@ -3,6 +3,6 @@
 .west
 modules
 firmware
-zmk
 zephyr
+zmk
 draw/base.yaml
