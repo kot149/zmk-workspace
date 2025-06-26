@@ -3,20 +3,23 @@
 This repository is a workspace for building ZMK firmware, based on [urob's zmk-config](https://github.com/urob/zmk-config).
 
 Difference from urob's zmk-config:
-- config is isolated per keyboard in `config/zmk-config-<keyboard>`
-  - Specify which keyboard to build with `ZMK_CONFIG` environment variable e.g. `ZMK_CONFIG=zmk-config-roBa just build roBa`
-- `just flash` is added to flash the firmware to the device from WSL (requires PowerShell 7 installed on the host machine)
-- Automatically removes `.west` when `just init` is run
+- zmk-config is isolated per keyboard in `config/zmk-config-<keyboard>`
 - Dev Container support
+- `just flash` is added to for UF2 loader (Only works on WSL with Nix, and requires PowerShell 7 installed on the host machine)
+- Automatically removes `.west` when `just init` is run
 - ZMK, Zephyr, and zmk-configs are added as submodules
 
-Note: keymap-drawer is not compatible with this setup.
+> [!note]
+> keymap-drawer is not compatible with this setup.
 
 ## Usage
 
 ### Local build environment
 
-1. See [urob's zmk-config README](https://github.com/urob/zmk-config#local-build-environment) for Nix and direnv setup, or use Dev Container
+> [!important]
+> When using Dev Container on Windows, it is recommended that the host directory also be located in the WSL; synchronizing the directory between Windows and the WSL (container) will result in significantly slower builds.
+
+1. See [urob's zmk-config README](https://github.com/urob/zmk-config#local-build-environment) for Nix and direnv setup, or Use Dev Container
 2. git clone your ZMK config into `config`
    ```sh
    git clone https://github.com/your-username/zmk-config-your-keyboard config/zmk-config-your-keyboard
