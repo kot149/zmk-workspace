@@ -1,6 +1,8 @@
 .build
 .direnv
 .west
+zmk
+zephyr
 modules
 firmware
 draw/base.yaml

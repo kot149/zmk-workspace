@@ -3,11 +3,10 @@
 This repository is a workspace for building ZMK firmware, based on [urob's zmk-config](https://github.com/urob/zmk-config).
 
 Difference from urob's zmk-config:
-- zmk-config is isolated per keyboard in `config/zmk-config-<keyboard>`
+- zmk-config is isolated per keyboard in `config/zmk-config-<keyboard>` and added as submodules
 - Dev Container support
 - `just flash` is added for UF2 loader (Only works on WSL with Nix, and requires PowerShell 7 installed on the host machine)
 - Automatically removes `.west` before `just init`
-- ZMK, Zephyr, and zmk-configs are added as submodules
 
 > [!note]
 > keymap-drawer is not compatible with this setup.
