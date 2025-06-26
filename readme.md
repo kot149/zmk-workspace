@@ -6,7 +6,7 @@ Difference from urob's zmk-config:
 - zmk-config is isolated per keyboard in `config/zmk-config-<keyboard>`
 - Dev Container support
 - `just flash` is added for UF2 loader (Only works on WSL with Nix, and requires PowerShell 7 installed on the host machine)
-- Automatically removes `.west` when `just init` is run
+- Automatically removes `.west` before `just init`
 - ZMK, Zephyr, and zmk-configs are added as submodules
 
 > [!note]
@@ -17,12 +17,15 @@ Difference from urob's zmk-config:
 ### Local build environment
 
 > [!important]
-> When using Dev Container on Windows, it is recommended that the host directory also be located in the WSL; synchronizing the directory between Windows and the WSL (container) will result in significantly slower builds.
+> When using Dev Container on Windows, it is recommended that the host directory also be located on WSL (and outside of `/mnt/c/`); synchronizing the directory between Windows and WSL (container) will result in significantly slower builds.
 
-1. See [urob's zmk-config README](https://github.com/urob/zmk-config#local-build-environment) for Nix and direnv setup, or Use Dev Container
+1. Clone this repo
+1. See [VSCode Docs](https://code.visualstudio.com/docs/devcontainers/containers) for Dev Conainer usage. Or, see [urob's zmk-config README](https://github.com/urob/zmk-config#local-build-environment) for Nix and direnv setup
 2. git clone your ZMK config into `config`
    ```sh
-   git clone https://github.com/your-username/zmk-config-your-keyboard config/zmk-config-your-keyboard
+   cd config
+   git clone https://github.com/your-username/zmk-config-your-keyboard
+   cd ..
    ```
 3. Set `ZMK_CONFIG` environment variable
    ```sh
