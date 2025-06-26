@@ -1,0 +1,108 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"group": "build",
+			"label": "Build firmware",
+			"command": "just",
+			"args": [
+				"build",
+				"${input:target}",
+				"${input:snippet}",
+				"${input:pristine}"
+			],
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": true,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": false
+			}
+		},
+		{
+			"type": "shell",
+			"group": "none",
+			"label": "Init",
+			"command": "just",
+			"args": [
+				"init"
+			],
+			"problemMatcher": []
+		},
+		{
+			"type": "shell",
+			"group": "none",
+			"label": "Update",
+			"command": "just",
+			"args": [
+				"update"
+			]
+		},
+		{
+			"type": "shell",
+			"group": "none",
+			"label": "List targets",
+			"command": "just",
+			"args": [
+				"list"
+			]
+		},
+		{
+			"type": "shell",
+			"group": "none",
+			"label": "Clean builds",
+			"command": "just",
+			"args": [
+				"clean"
+			]
+		},
+		{
+			"type": "shell",
+			"group": "none",
+			"label": "Clean all",
+			"command": "just",
+			"args": [
+				"clean-all"
+			]
+		},
+		{
+			"type": "shell",
+			"group": "none",
+			"label": "Upgrade SDK (for Nix setup)",
+			"command": "just",
+			"args": [
+				"upgrade-sdk"
+			]
+		},
+	],
+	"inputs": [
+		{
+			"id": "target",
+			"type": "promptString",
+			"description": "Enter the target shield name (e.g. corne_right, corne_left, all)",
+		},
+		{
+			"id": "snippet",
+			"type": "pickString",
+			"description": "Select snippet",
+			"default": "",
+			"options": [
+				"",
+				"-S zmk-usb-logging",
+				"-S studio-rpc-usb-uart",
+			]
+		},
+		{
+			"id": "pristine",
+			"type": "pickString",
+			"description": "Select whether to use '-p' option to make build directory pristine",
+			"default": "",
+			"options": [
+				"",
+				"-p",
+			]
+		}
+	]
+}
