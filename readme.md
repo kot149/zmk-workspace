@@ -5,7 +5,7 @@ This repository is a workspace for building ZMK firmware, based on [urob's zmk-c
 Difference from urob's zmk-config:
 - zmk-config is isolated per keyboard in `config/zmk-config-<keyboard>`
 - Dev Container support
-- `just flash` is added to for UF2 loader (Only works on WSL with Nix, and requires PowerShell 7 installed on the host machine)
+- `just flash` is added for UF2 loader (Only works on WSL with Nix, and requires PowerShell 7 installed on the host machine)
 - Automatically removes `.west` when `just init` is run
 - ZMK, Zephyr, and zmk-configs are added as submodules
 
