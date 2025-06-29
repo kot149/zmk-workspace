@@ -5,10 +5,6 @@ OUT = "{{cwd}}/firmware"
 DRAW = "{{cwd}}/draw"
 ZMK_CONFIG = "zmk-config-roBa"
 
-[tasks.default]
-description = "List all available tasks"
-run = "mise tasks ls"
-
 [tasks.parse-combos]
 description = "Parse combos.dtsi and adjust settings to not run out of slots"
 run = '''
