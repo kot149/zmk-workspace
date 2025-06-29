@@ -1,0 +1,238 @@
+[env]
+CONFIG = "{{cwd}}/config"
+BUILD = "{{cwd}}/.build"
+OUT = "{{cwd}}/firmware"
+DRAW = "{{cwd}}/draw"
+ZMK_CONFIG = "zmk-config-roBa"
+
+[tasks.default]
+description = "List all available tasks"
+run = "mise tasks ls"
+
+[tasks.parse-combos]
+description = "Parse combos.dtsi and adjust settings to not run out of slots"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+cconf="$CONFIG/combos.dtsi"
+if [[ -f $cconf ]]; then
+    # set MAX_COMBOS_PER_KEY to the most frequent combos count
+    count=$(
+        tail -n +10 $cconf |
+            grep -Eo '[LR][TMBH][0-9]' |
+            sort | uniq -c | sort -nr |
+            awk 'NR==1{print $1}'
+    )
+    sed -Ei "/CONFIG_ZMK_COMBO_MAX_COMBOS_PER_KEY/s/=.+/=$count/" "$CONFIG"/*.conf
+    echo "Setting MAX_COMBOS_PER_KEY to $count"
+
+    # set MAX_KEYS_PER_COMBO to the most frequent key count
+    count=$(
+        tail -n +10 $cconf |
+            grep -o -n '[LR][TMBH][0-9]' |
+            cut -d : -f 1 | uniq -c | sort -nr |
+            awk 'NR==1{print $1}'
+    )
+    sed -Ei "/CONFIG_ZMK_COMBO_MAX_KEYS_PER_COMBO/s/=.+/=$count/" "$CONFIG"/*.conf
+    echo "Setting MAX_KEYS_PER_COMBO to $count"
+fi
+'''
+
+[tasks.parse-targets]
+description = "Parse build.yaml and filter targets by expression"
+run = '''
+#!/usr/bin/env bash
+expr="${1:-all}"
+attrs="[.board, .shield, .snippet, .\"artifact-name\"]"
+filter="(($attrs | map(. // [.]) | combinations), ((.include // {})[] | $attrs)) | join(\",\")"
+echo "$(yq -r "$filter" "$CONFIG/$ZMK_CONFIG/build.yaml" | grep -v "^," | grep -i "${expr/#all/.*}")"
+'''
+
+[tasks.build-single]
+description = "Build firmware for single board & shield combination"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+board="$1"
+shield="$2"
+snippet="$3"
+artifact="${4:-${shield:+${shield// /+}-}${board}}"
+shift 4
+west_args="$@"
+
+artifact="${artifact:-${shield:+${shield// /+}-}${board}}"
+build_dir="$BUILD/$artifact"
+zmk_config_path="$CONFIG/$ZMK_CONFIG"
+
+echo "Building firmware for $artifact..."
+
+# Check if zephyr/module.yml exists to determine whether to include DZMK_EXTRA_MODULES
+if [[ -f "$zmk_config_path/zephyr/module.yml" ]]; then
+    west build -s zmk/app -d "$build_dir" -b $board ${west_args} ${snippet:+-S "$snippet"} -- \
+        -DZMK_CONFIG="$zmk_config_path/config" -DZMK_EXTRA_MODULES="$zmk_config_path;/home/ku0143/keyboard/zmk-workspace/modules/zmk-mouse-gesture" ${shield:+-DSHIELD="$shield"}
+else
+    west build -s zmk/app -d "$build_dir" -b $board ${west_args} ${snippet:+-S "$snippet"} -- \
+        -DZMK_CONFIG="$zmk_config_path/config" ${shield:+-DSHIELD="$shield"}
+fi
+
+if [[ -f "$build_dir/zephyr/zmk.uf2" ]]; then
+    mkdir -p "$OUT" && cp "$build_dir/zephyr/zmk.uf2" "$OUT/$artifact.uf2"
+else
+    mkdir -p "$OUT" && cp "$build_dir/zephyr/zmk.bin" "$OUT/$artifact.bin"
+fi
+'''
+
+[tasks.build]
+description = "Build firmware for matching targets"
+depends = ["parse-combos"]
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+expr="${1:-all}"
+shift || true
+west_args="$@"
+
+targets=$(mise run parse-targets "$expr")
+
+[[ -z $targets ]] && echo "No matching targets found. Aborting..." >&2 && exit 1
+echo "$targets" | while IFS=, read -r board shield snippet artifact; do
+    mise run build-single "$board" "$shield" "$snippet" "$artifact" $west_args
+done
+'''
+
+[tasks.clean]
+description = "Clear build cache and artifacts"
+run = '''
+rm -rf "$BUILD" "$OUT"
+'''
+
+[tasks.clean-all]
+description = "Clear all automatically generated files"
+depends = ["clean"]
+run = '''
+rm -rf .west zmk
+'''
+
+[tasks.clean-nix]
+description = "Clear nix cache"
+run = '''
+nix-collect-garbage --delete-old
+'''
+
+[tasks.draw]
+description = "Parse & plot keymap"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+keymap -c "$DRAW/config.yaml" parse -z "$CONFIG/base.keymap" --virtual-layers Combos >"$DRAW/base.yaml"
+yq -Yi '.combos.[].l = ["Combos"]' "$DRAW/base.yaml"
+keymap -c "$DRAW/config.yaml" draw "$DRAW/base.yaml" -k "ferris/sweep" >"$DRAW/base.svg"
+'''
+
+[tasks.init]
+description = "Initialize west"
+run = '''
+rm -rf .west
+west init -l config --mf "$ZMK_CONFIG/config/west.yml"
+west update --fetch-opt=--filter=blob:none
+west zephyr-export
+'''
+
+[tasks.list]
+description = "List build targets"
+run = '''
+mise run parse-targets all | sed 's/,*$//' | sort | column
+'''
+
+[tasks.update]
+description = "Update west"
+run = '''
+west update --fetch-opt=--filter=blob:none
+'''
+
+[tasks.upgrade-sdk]
+description = "Upgrade zephyr-sdk and python dependencies"
+run = '''
+nix flake update --flake .
+'''
+
+[tasks.flash]
+description = "Flash firmware for matching targets"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Check if -r option is provided
+rebuild=false
+build_args=()
+expr="$1"
+shift
+
+for arg in "$@"; do
+    if [[ "$arg" == "-r" ]]; then
+        rebuild=true
+    else
+        build_args+=("$arg")
+    fi
+done
+
+# Rebuild if -r option was provided
+if [[ "$rebuild" == "true" ]]; then
+    echo "Rebuilding before flashing..."
+    mise run build "$expr" "${build_args[@]}"
+fi
+
+target=$(mise run parse-targets "$expr" | head -n 1)
+
+if [[ -z "$target" ]]; then
+    echo "No matching targets found for expression '$expr'. Aborting..." >&2
+    exit 1
+fi
+
+IFS=, read -r board shield snippet <<< "$target"
+artifact="${shield:+${shield// /+}-}${board}"
+uf2_file="$artifact.uf2"
+uf2_path="$OUT/$uf2_file"
+
+if [[ ! -f "$uf2_path" ]]; then
+    echo "Firmware file '$uf2_path' not found. Please build it first with 'mise run build \"$expr\"'." >&2
+    exit 1
+fi
+
+echo "Flashing '$uf2_path'..."
+win_build_dir=$(wslpath -w "$OUT")
+pwsh.exe -ExecutionPolicy Bypass -File flash.ps1 -BuildDir "$win_build_dir" -Uf2File "$uf2_file"
+'''
+
+[tasks.test]
+description = "Run tests"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+testpath="$1"
+shift
+FLAGS="$@"
+
+testcase=$(basename "$testpath")
+build_dir="$BUILD/tests/$testcase"
+config_dir="$(pwd)/$testpath"
+
+if [[ "$FLAGS" != *"--no-build"* ]]; then
+    echo "Running $testcase..."
+    rm -rf "$build_dir"
+    west build -s zmk/app -d "$build_dir" -b native_posix_64 -- \
+        -DCONFIG_ASSERT=y -DZMK_CONFIG="$config_dir"
+fi
+
+${build_dir}/zephyr/zmk.exe | sed -e "s/.*> //" |
+    tee ${build_dir}/keycode_events.full.log |
+    sed -n -f ${config_dir}/events.patterns > ${build_dir}/keycode_events.log
+if [[ "$FLAGS" == *"--verbose"* ]]; then
+    cat ${build_dir}/keycode_events.log
+fi
+
+if [[ "$FLAGS" == *"--auto-accept"* ]]; then
+    cp ${build_dir}/keycode_events.log ${config_dir}/keycode_events.snapshot
+fi
+diff -auZ ${config_dir}/keycode_events.snapshot ${build_dir}/keycode_events.log
+'''
