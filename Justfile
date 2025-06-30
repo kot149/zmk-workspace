@@ -120,7 +120,7 @@ upgrade-sdk:
 flash expr *args:
     #!/usr/bin/env bash
     set -euo pipefail
-    
+
     # Check if -r option is provided
     rebuild=false
     build_args=()
@@ -131,13 +131,13 @@ flash expr *args:
             build_args+=("$arg")
         fi
     done
-    
+
     # Rebuild if -r option was provided
     if [[ "$rebuild" == "true" ]]; then
         echo "Rebuilding before flashing..."
         just build "{{ expr }}" "${build_args[@]}"
     fi
-    
+
     target=$(just _parse_targets {{ expr }} | head -n 1)
 
     if [[ -z "$target" ]]; then
@@ -172,7 +172,8 @@ test $testpath *FLAGS:
         echo "Running $testcase..."
         rm -rf "$build_dir"
         west build -s zmk/app -d "$build_dir" -b native_posix_64 -- \
-            -DCONFIG_ASSERT=y -DZMK_CONFIG="$config_dir"
+            -DCONFIG_ASSERT=y -DZMK_CONFIG="$config_dir" \
+            ${ZMK_EXTRA_MODULES:+-DZMK_EXTRA_MODULES="$(realpath ${ZMK_EXTRA_MODULES})"}
     fi
 
     ${build_dir}/zephyr/zmk.exe | sed -e "s/.*> //" |
