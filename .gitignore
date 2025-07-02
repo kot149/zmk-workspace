@@ -4,5 +4,6 @@
 modules
 firmware
 zephyr
+.zephyr-sdk
 zmk
 draw/base.yaml

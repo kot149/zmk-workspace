@@ -1,9 +1,25 @@
+[tools]
+python = "3.11"
+cmake = "3.28"
+ninja = "1.11"
+"pipx:yq" = "latest"
+"pipx:west" = "latest"
+jq = "latest"
+uv = "latest"
+
 [env]
+ZMK_BUILD_DIR = "{{cwd}}/.build"
+ZMK_SRC_DIR = "{{cwd}}/zmk/app"
 CONFIG = "{{cwd}}/config"
 BUILD = "{{cwd}}/.build"
 OUT = "{{cwd}}/firmware"
 DRAW = "{{cwd}}/draw"
 ZMK_CONFIG = "zmk-config-roBa"
+ZEPHYR_BASE = "{{cwd}}/zephyr"
+ZEPHYR_SDK_INSTALL_DIR = "{{cwd}}/.zephyr-sdk"
+
+[settings.pipx]
+uvx = true
 
 [tasks.parse-combos]
 description = "Parse combos.dtsi and adjust settings to not run out of slots"
@@ -125,13 +141,37 @@ yq -Yi '.combos.[].l = ["Combos"]' "$DRAW/base.yaml"
 keymap -c "$DRAW/config.yaml" draw "$DRAW/base.yaml" -k "ferris/sweep" >"$DRAW/base.svg"
 '''
 
+[tasks.setup-west]
+description = "Install Zephyr Python dependencies"
+run = '''
+pip install -r zephyr/scripts/requirements.txt
+'''
+
+[tasks.install-zephyr-sdk]
+description = "Download and install Zephyr SDK 0.16.3"
+run = '''
+mkdir -p .zephyr-sdk
+cd .zephyr-sdk && curl -L https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.3/zephyr-sdk-0.16.3_linux-x86_64.tar.xz | tar -xJ --strip-components=1
+cd .zephyr-sdk && ./setup.sh -h
+'''
+
 [tasks.init]
 description = "Initialize west"
+depends = ["setup-west"]
 run = '''
 rm -rf .west
 west init -l config --mf "$ZMK_CONFIG/config/west.yml"
 west update --fetch-opt=--filter=blob:none
 west zephyr-export
+'''
+
+[tasks.setup]
+description = "Complete ZMK development environment setup"
+depends = ["install-zephyr-sdk", "init"]
+run = '''
+echo "ZMK development environment setup complete!"
+echo "ZEPHYR_BASE: $ZEPHYR_BASE"
+echo "ZEPHYR_SDK_INSTALL_DIR: $ZEPHYR_SDK_INSTALL_DIR"
 '''
 
 [tasks.list]
