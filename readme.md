@@ -17,10 +17,13 @@ Difference from urob's zmk-config:
 ### Local build environment
 
 > [!important]
-> When using Dev Container on Windows, it is recommended that the host directory also be located on WSL (and outside of `/mnt/c/`); syncing the directory between Windows and WSL (container) will result in significantly slower builds.
+> On Windows, you are required to use WSL and it is recommended that the directory be located outside of `/mnt/c/`; syncing the directory between Windows and WSL will result in significantly slower builds.
 
+1. Install [mise](https://mise.jdx.dev)
+   ```sh
+   curl https://mise.run | sh
+   ```
 1. Clone this repo (use `--recursive` to also clone submodules)
-1. See [VSCode Docs](https://code.visualstudio.com/docs/devcontainers/containers) for Dev Conainer usage. Or, see [urob's zmk-config README](https://github.com/urob/zmk-config#local-build-environment) for Nix and direnv setup
 2. git clone your zmk-config into `config`
    ```sh
    cd config
@@ -31,19 +34,19 @@ Difference from urob's zmk-config:
    ```sh
    export ZMK_CONFIG=zmk-config-your-keyboard
    ```
-4. Init
+2. Setup
    ```sh
-   just init
+   mise setup
    ```
 5. Build
    ```sh
-   just build [target]
+   mise build [target]
    ```
 6. Flash
    ```sh
-   just flash [target]
+   mise flash [target]
    ```
    or you can specify `-r` to build before flashing
    ```sh
-   just flash [target] -r
+   mise flash [target] -r
    ```
