@@ -123,7 +123,7 @@ rm -rf "$BUILD" "$OUT"
 description = "Clear all automatically generated files"
 depends = ["clean"]
 run = '''
-rm -rf .west zmk
+rm -rf .west zmk zephyr .zephyr-sdk .venv
 '''
 
 [tasks.clean-nix]
