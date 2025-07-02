@@ -8,6 +8,7 @@ jq = "latest"
 uv = "latest"
 
 [env]
+_.python.venv = { path = ".venv", create = true }
 ZMK_BUILD_DIR = "{{cwd}}/.build"
 ZMK_SRC_DIR = "{{cwd}}/zmk/app"
 CONFIG = "{{cwd}}/config"
@@ -141,23 +142,22 @@ yq -Yi '.combos.[].l = ["Combos"]' "$DRAW/base.yaml"
 keymap -c "$DRAW/config.yaml" draw "$DRAW/base.yaml" -k "ferris/sweep" >"$DRAW/base.svg"
 '''
 
-[tasks.setup-west]
+[tasks.setup-west-deps]
 description = "Install Zephyr Python dependencies"
 run = '''
-pip install -r zephyr/scripts/requirements.txt
+uv pip install -r zephyr/scripts/requirements.txt
 '''
 
-[tasks.install-zephyr-sdk]
+[tasks.setup-zephyr-sdk]
 description = "Download and install Zephyr SDK 0.16.3"
 run = '''
 mkdir -p .zephyr-sdk
 cd .zephyr-sdk && curl -L https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.3/zephyr-sdk-0.16.3_linux-x86_64.tar.xz | tar -xJ --strip-components=1
-cd .zephyr-sdk && ./setup.sh -h
+./setup.sh -h
 '''
 
 [tasks.init]
 description = "Initialize west"
-depends = ["setup-west"]
 run = '''
 rm -rf .west
 west init -l config --mf "$ZMK_CONFIG/config/west.yml"
@@ -167,8 +167,9 @@ west zephyr-export
 
 [tasks.setup]
 description = "Complete ZMK development environment setup"
-depends = ["install-zephyr-sdk", "init"]
+depends = ["setup-zephyr-sdk", "init"]
 run = '''
+mise run setup-west-deps
 echo "ZMK development environment setup complete!"
 echo "ZEPHYR_BASE: $ZEPHYR_BASE"
 echo "ZEPHYR_SDK_INSTALL_DIR: $ZEPHYR_SDK_INSTALL_DIR"

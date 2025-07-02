@@ -7,3 +7,4 @@ zephyr
 .zephyr-sdk
 zmk
 draw/base.yaml
+.venv
