@@ -19,5 +19,5 @@
     }
   },
   "forwardPorts": [3000],
-  "postCreateCommand": "apt-get update && apt-get install -y just yq bsdmainutils"
+  "postCreateCommand": "apt-get update && apt-get install -y just yq bsdmainutils fzf"
 }
