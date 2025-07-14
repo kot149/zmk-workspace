@@ -34,6 +34,7 @@
 
               pkgs.just
               pkgs.yq # Make sure yq resolves to python-yq.
+              pkgs.fzf
 
               keymap_drawer
 

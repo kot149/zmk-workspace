@@ -6,6 +6,7 @@ Difference from urob's zmk-config:
 - zmk-config is isolated per keyboard in `config/zmk-config-<keyboard>` and added as submodules
 - Supports extra modules for zmk-config and tests
 - Dev Container support
+- fzf support for target selection
 - `just flash` is added for UF2 loader (Only works on WSL with Nix, and requires PowerShell 7 installed on the host machine)
 - Automatically removes `.west` before `just init`
 
@@ -31,6 +32,10 @@ Difference from urob's zmk-config:
    ```sh
    export ZMK_CONFIG=zmk-config-your-keyboard
    ```
+   Or, you can use `just config-export` to select the config using fzf.
+   ```sh
+   eval $(just config-export)
+   ```
 4. Init
    ```sh
    just init
@@ -39,6 +44,7 @@ Difference from urob's zmk-config:
    ```sh
    just build [target]
    ```
+   You can omit the target to select using fzf. You can also specify west args.
 6. Flash
    ```sh
    just flash [target]
