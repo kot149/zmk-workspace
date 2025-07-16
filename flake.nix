@@ -51,11 +51,8 @@
           shellHook = ''
             export ZMK_BUILD_DIR=$(pwd)/.build;
             export ZMK_SRC_DIR=$(pwd)/zmk/app;
-            
-            # Source just completion if available
-            if [[ -f "_just_completion.bash" ]]; then
-              source _just_completion.bash
-            fi
+
+            source _just_completion.bash
           '';
         };
       }
