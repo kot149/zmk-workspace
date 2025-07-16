@@ -67,54 +67,14 @@ _build_single $board $shield $snippet $artifact *west_args:
     fi
 
 # build firmware for matching targets
-build *args: _parse_combos
+build expr *west_args: _parse_combos
     #!/usr/bin/env bash
     set -euo pipefail
+    targets=$(just _parse_targets {{ expr }})
 
-    # Convert just args to bash array
-    args_array=({{ args }})
-
-    # Parse arguments to separate expression from west args
-    expr=""
-    west_args=()
-
-    # Check if first argument doesn't start with '-' (is an expression)
-    if [[ ${#args_array[@]} -gt 0 && "${args_array[0]:0:1}" != "-" ]]; then
-        expr="${args_array[0]}"
-        west_args=("${args_array[@]:1}")
-    else
-        west_args=("${args_array[@]}")
-    fi
-
-    # If no expression provided, use fzf to select targets
-    if [[ -z "$expr" ]]; then
-        targets=$(just _parse_targets all)
-
-        if [[ -z "$targets" ]]; then
-            echo "No targets found. Aborting..." >&2
-            exit 1
-        fi
-
-        # Use fzf to select target(s)
-        selected=$(echo "$targets" | sed 's/,*$//' | fzf \
-            --multi \
-            --prompt="Select build target(s): " \
-            --header="Choose target(s) to build (use Tab for multi-select)" \
-            --preview="echo {} | awk -F',' '{print \"Board: \" \$1 \"\\nShield: \" \$2 \"\\nSnippet: \" \$3}'")
-
-        if [[ -z "$selected" ]]; then
-            echo "No targets selected. Exiting..."
-            exit 0
-        fi
-
-        targets="$selected"
-    else
-        targets=$(just _parse_targets "$expr")
-        [[ -z $targets ]] && echo "No matching targets found. Aborting..." >&2 && exit 1
-    fi
-
+    [[ -z $targets ]] && echo "No matching targets found. Aborting..." >&2 && exit 1
     echo "$targets" | while IFS=, read -r board shield snippet artifact; do
-        just _build_single "$board" "$shield" "$snippet" "$artifact" "${west_args[@]}"
+        just _build_single "$board" "$shield" "$snippet" "$artifact" {{ west_args }}
     done
 
 # clear build cache and artifacts
@@ -157,28 +117,14 @@ upgrade-sdk:
     nix flake update --flake .
 
 # flash firmware for matching targets
-flash *args:
+flash expr *args:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # Convert just args to bash array
-    args_array=({{ args }})
-
-    # Parse arguments to separate expression from options
-    expr=""
+    # Check if -r option is provided
     rebuild=false
     build_args=()
-
-    # Check if first argument doesn't start with '-' (is an expression)
-    if [[ ${#args_array[@]} -gt 0 && "${args_array[0]:0:1}" != "-" ]]; then
-        expr="${args_array[0]}"
-        remaining_args=("${args_array[@]:1}")
-    else
-        remaining_args=("${args_array[@]}")
-    fi
-
-    # Parse remaining arguments for options
-    for arg in "${remaining_args[@]}"; do
+    for arg in {{ args }}; do
         if [[ "$arg" == "-r" ]]; then
             rebuild=true
         else
@@ -186,54 +132,26 @@ flash *args:
         fi
     done
 
-    # If no expression provided, use fzf to select target
-    if [[ -z "$expr" ]]; then
-        targets=$(just _parse_targets all)
-
-        if [[ -z "$targets" ]]; then
-            echo "No targets found. Aborting..." >&2
-            exit 1
-        fi
-
-        # Use fzf to select target (single selection for flash)
-        selected=$(echo "$targets" | sed 's/,*$//' | fzf \
-            --prompt="Select target to flash: " \
-            --header="Choose a target to flash" \
-            --preview="echo {} | awk -F',' '{print \"Board: \" \$1 \"\\nShield: \" \$2 \"\\nSnippet: \" \$3}'")
-
-        if [[ -z "$selected" ]]; then
-            echo "No target selected. Exiting..."
-            exit 0
-        fi
-
-        target="$selected"
-    else
-        target=$(just _parse_targets "$expr" | head -n 1)
-
-        if [[ -z "$target" ]]; then
-            echo "No matching targets found for expression '$expr'. Aborting..." >&2
-            exit 1
-        fi
-    fi
-
-    IFS=, read -r board shield snippet artifact <<< "$target"
-
-    # Use provided artifact name or generate default
-    if [[ -z "$artifact" ]]; then
-        artifact="${shield:+${shield// /+}-}${board}"
-    fi
-
     # Rebuild if -r option was provided
     if [[ "$rebuild" == "true" ]]; then
         echo "Rebuilding before flashing..."
-        just _build_single "$board" "$shield" "$snippet" "$artifact" "${build_args[@]}"
+        just build "{{ expr }}" "${build_args[@]}"
     fi
 
+    target=$(just _parse_targets {{ expr }} | head -n 1)
+
+    if [[ -z "$target" ]]; then
+        echo "No matching targets found for expression '{{ expr }}'. Aborting..." >&2
+        exit 1
+    fi
+
+    IFS=, read -r board shield snippet <<< "$target"
+    artifact="${shield:+${shield// /+}-}${board}"
     uf2_file="$artifact.uf2"
     uf2_path="{{ out }}/$uf2_file"
 
     if [[ ! -f "$uf2_path" ]]; then
-        echo "Firmware file '$uf2_path' not found. Please build it first." >&2
+        echo "Firmware file '$uf2_path' not found. Please build it first with 'just build \"{{ expr }}\"'." >&2
         exit 1
     fi
 

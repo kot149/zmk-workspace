@@ -44,7 +44,7 @@ Difference from urob's zmk-config:
    ```sh
    just build [target]
    ```
-   You can omit the target to select using fzf. You can also specify west args.
+   You can use `TAB` completion for the target and west args.
 6. Flash
    ```sh
    just flash [target]
