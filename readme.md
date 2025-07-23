@@ -30,8 +30,9 @@ Difference from urob's zmk-config:
    ```
 4. Init and select the target config
    ```sh
-   just init
+   just init zmk-config-your-keyboard
    ```
+   You can omit the config name to use fzf to select the config.
 5. Build
    ```sh
    just build [target]

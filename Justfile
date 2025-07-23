@@ -98,7 +98,7 @@ draw:
     keymap -c "{{ draw }}/config.yaml" draw "{{ draw }}/base.yaml" -k "ferris/sweep" >"{{ draw }}/base.svg"
 
 # initialize west
-init:
+init *config_name:
     #!/usr/bin/env bash
     set -euo pipefail
     
@@ -110,15 +110,27 @@ init:
         exit 1
     fi
     
-    # Use fzf to select config
-    selected=$(echo "$config_dirs" | fzf \
-        --prompt="Select ZMK config: " \
-        --header="Choose a configuration to initialize" \
-        --preview="ls -1a {{ config }}/{}")
-    
-    if [[ -z "$selected" ]]; then
-        echo "No config selected. Exiting..."
-        exit 0
+    # If config name is provided as argument, use it; otherwise use fzf
+    if [[ -n "{{ config_name }}" ]]; then
+        selected="{{ config_name }}"
+        # Validate that the provided config exists
+        if [[ ! -d "{{ config }}/$selected" ]]; then
+            echo "Config directory '{{ config }}/$selected' not found." >&2
+            echo "Available configs:" >&2
+            echo "$config_dirs" >&2
+            exit 1
+        fi
+    else
+        # Use fzf to select config
+        selected=$(echo "$config_dirs" | fzf \
+            --prompt="Select ZMK config: " \
+            --header="Choose a configuration to initialize" \
+            --preview="ls -1a {{ config }}/{}")
+        
+        if [[ -z "$selected" ]]; then
+            echo "No config selected. Exiting..."
+            exit 0
+        fi
     fi
     
     echo "Initializing with config: $selected"
