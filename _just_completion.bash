@@ -6,18 +6,6 @@ _just_completion() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    # Complete just commands if we're at position 1
-    if [[ $COMP_CWORD -eq 1 ]]; then
-        local commands="build flash list init clear clean clean-all clean-nix draw update upgrade-sdk test config-export"
-        local selected
-        selected=$(echo "$commands" | tr ' ' '\n' | fzf \
-            --prompt="Select command: " \
-            --header="Choose a just command" \
-            --query="$cur")
-        [[ -n "$selected" ]] && COMPREPLY=("$selected")
-        return
-    fi
-
     if [[ "${COMP_WORDS[1]}" == "build" || "${COMP_WORDS[1]}" == "flash" ]]; then
         # Handle -S option completion (only for flash command with -r option)
         if [[ "$prev" == "-S" && ("${COMP_WORDS[1]}" == "build" || ("${COMP_WORDS[1]}" == "flash" && " ${COMP_WORDS[*]} " =~ " -r ")) ]]; then
