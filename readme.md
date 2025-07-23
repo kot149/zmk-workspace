@@ -36,7 +36,6 @@ Difference from urob's zmk-config:
    ```sh
    just build [target]
    ```
-   You can use `TAB` completion for the target and west args.
 6. Flash
    ```sh
    just flash [target]
@@ -45,3 +44,12 @@ Difference from urob's zmk-config:
    ```sh
    just flash [target] -r
    ```
+
+## Tab completion
+
+With Dev Container or `nix develop` command, tab completion is enabled by default.
+
+Otherwise, manually run `source _just_completion.bash` on Zsh to enable tab completion.
+```sh
+source _just_completion.bash
+```
