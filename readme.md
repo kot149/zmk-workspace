@@ -28,15 +28,7 @@ Difference from urob's zmk-config:
    git clone https://github.com/your-username/zmk-config-your-keyboard
    cd ..
    ```
-3. Set `ZMK_CONFIG` environment variable
-   ```sh
-   export ZMK_CONFIG=zmk-config-your-keyboard
-   ```
-   Or, you can use `just config-export` to select the config using fzf.
-   ```sh
-   eval $(just config-export)
-   ```
-4. Init
+4. Init and select the target config
    ```sh
    just init
    ```

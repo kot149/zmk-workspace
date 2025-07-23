@@ -5,7 +5,7 @@ config := absolute_path('config')
 build := absolute_path('.build')
 out := absolute_path('firmware')
 draw := absolute_path('draw')
-zmk_config := env_var_or_default('ZMK_CONFIG', 'zmk-config-roBa')
+zmk_config := `if [ -f .west/config ]; then sed -n 's|^file[[:space:]]*=[[:space:]]*\([^/]*\)/.*|\1|p' .west/config; else echo zmk-config-roBa; fi`
 
 # parse combos.dtsi and adjust settings to not run out of slots
 _parse_combos:
@@ -99,8 +99,31 @@ draw:
 
 # initialize west
 init:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    
+    # Get all zmk-config directories
+    config_dirs=$(find "{{ config }}" -maxdepth 1 -type d -name "zmk-config-*" -exec basename {} \; | sort)
+    
+    if [[ -z "$config_dirs" ]]; then
+        echo "No zmk-config directories found in config/." >&2
+        exit 1
+    fi
+    
+    # Use fzf to select config
+    selected=$(echo "$config_dirs" | fzf \
+        --prompt="Select ZMK config: " \
+        --header="Choose a configuration to initialize" \
+        --preview="ls -1a {{ config }}/{}")
+    
+    if [[ -z "$selected" ]]; then
+        echo "No config selected. Exiting..."
+        exit 0
+    fi
+    
+    echo "Initializing with config: $selected"
     rm -rf .west
-    west init -l config --mf {{ zmk_config }}/config/west.yml
+    west init -l config --mf "$selected/config/west.yml"
     west update --fetch-opt=--filter=blob:none
     west zephyr-export
 
@@ -188,28 +211,3 @@ test $testpath *FLAGS:
     fi
     diff -auZ ${config_dir}/keycode_events.snapshot ${build_dir}/keycode_events.log
 
-# export ZMK_CONFIG environment variable using fzf for config selection. Use with eval $(just config-export)
-config-export:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    # Get all zmk-config directories
-    config_dirs=$(find "{{ config }}" -maxdepth 1 -type d -name "zmk-config-*" -exec basename {} \; | sort)
-
-    if [[ -z "$config_dirs" ]]; then
-        echo "No zmk-config directories found in config/." >&2
-        exit 1
-    fi
-
-    # Use fzf to select config
-    selected=$(echo "$config_dirs" | fzf \
-        --prompt="Select ZMK config: " \
-        --header="Choose a configuration to export" \
-        --preview="ls -1a {{ config }}/{}")
-
-    if [[ -z "$selected" ]]; then
-        echo "No config selected. Exiting..."
-        exit 0
-    fi
-
-    echo "export ZMK_CONFIG=$selected"
