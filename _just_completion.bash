@@ -6,7 +6,24 @@ _just_completion() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    if [[ "${COMP_WORDS[1]}" == "build" || "${COMP_WORDS[1]}" == "flash" ]]; then
+    if [[ "${COMP_WORDS[1]}" == "init" ]]; then
+        # Handle init command completion with config directories
+        if [[ -d "config" ]]; then
+            local dirs
+            config_dirs=$(find config -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
+
+            if [[ -n "$config_dirs" ]]; then
+                local selected
+                selected=$(echo "$config_dirs" | fzf \
+                    --prompt="Select ZMK config: " \
+                    --header="Choose a configuration to initialize" \
+                    --preview="ls -1a config/{}" \
+                    --query="$cur")
+                [[ -n "$selected" ]] && COMPREPLY=("$selected")
+                return
+            fi
+        fi
+    elif [[ "${COMP_WORDS[1]}" == "build" || "${COMP_WORDS[1]}" == "flash" ]]; then
         # Handle -S option completion (only for flash command with -r option)
         if [[ "$prev" == "-S" && ("${COMP_WORDS[1]}" == "build" || ("${COMP_WORDS[1]}" == "flash" && " ${COMP_WORDS[*]} " =~ " -r ")) ]]; then
             local selected

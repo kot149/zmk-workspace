@@ -101,15 +101,15 @@ draw:
 init *config_name:
     #!/usr/bin/env bash
     set -euo pipefail
-    
+
     # Get all zmk-config directories
-    config_dirs=$(find "{{ config }}" -maxdepth 1 -type d -name "zmk-config-*" -exec basename {} \; | sort)
-    
+    config_dirs=$(find "{{ config }}" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
+
     if [[ -z "$config_dirs" ]]; then
         echo "No zmk-config directories found in config/." >&2
         exit 1
     fi
-    
+
     # If config name is provided as argument, use it; otherwise use fzf
     if [[ -n "{{ config_name }}" ]]; then
         selected="{{ config_name }}"
@@ -126,13 +126,13 @@ init *config_name:
             --prompt="Select ZMK config: " \
             --header="Choose a configuration to initialize" \
             --preview="ls -1a {{ config }}/{}")
-        
+
         if [[ -z "$selected" ]]; then
             echo "No config selected. Exiting..."
             exit 0
         fi
     fi
-    
+
     echo "Initializing with config: $selected"
     rm -rf .west
     west init -l config --mf "$selected/config/west.yml"
@@ -222,4 +222,3 @@ test $testpath *FLAGS:
         cp ${build_dir}/keycode_events.log ${config_dir}/keycode_events.snapshot
     fi
     diff -auZ ${config_dir}/keycode_events.snapshot ${build_dir}/keycode_events.log
-
