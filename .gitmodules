@@ -4,9 +4,6 @@
 [submodule "config/zmk-config-roBa"]
 	path = config/zmk-config-roBa
 	url = https://github.com/kot149/zmk-config-roBa.git
-[submodule "config/zmk-config-Lalapad"]
-	path = config/zmk-config-Lalapad
-	url = https://github.com/kot149/zmk-config-LalaPad.git
 [submodule "config/zmk-config-LalaPad"]
 	path = config/zmk-config-LalaPad
 	url = https://github.com/kot149/zmk-config-LalaPad.git
