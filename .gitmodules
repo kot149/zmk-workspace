@@ -7,3 +7,6 @@
 [submodule "config/zmk-config-LalaPad"]
 	path = config/zmk-config-LalaPad
 	url = https://github.com/kot149/zmk-config-LalaPad.git
+[submodule "config/zmk-config-MKB2"]
+	path = config/zmk-config-MKB2
+	url = https://github.com/kot149/zmk-config-MKB2.git
