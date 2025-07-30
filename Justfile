@@ -180,9 +180,14 @@ flash expr *args:
         exit 1
     fi
 
-    IFS=, read -r board shield snippet <<< "$target"
-    artifact="${shield:+${shield// /+}-}${board}"
-    uf2_file="$artifact.uf2"
+    IFS=, read -r board shield snippet artifact <<< "$target"
+    # Use artifact-name if specified, otherwise construct from shield and board
+    if [[ -n "$artifact" ]]; then
+        artifact_name="$artifact"
+    else
+        artifact_name="${shield:+${shield// /+}-}${board}"
+    fi
+    uf2_file="$artifact_name.uf2"
     uf2_path="{{ out }}/$uf2_file"
 
     if [[ ! -f "$uf2_path" ]]; then
