@@ -68,16 +68,16 @@
     "zephyr": {
       "flake": false,
       "locked": {
-        "lastModified": 1738456065,
-        "narHash": "sha256-lRAKi/8jZ70N2X00QI/0TpPglRP2O+MyM+2BcnQcPM0=",
-        "owner": "zmkfirmware",
+        "lastModified": 1749020948,
+        "narHash": "sha256-tDaJ1bZi11wDtbtRxNkAPhvytrk6uOXZr5M6IggxjVA=",
+        "owner": "petejohanson",
         "repo": "zephyr",
-        "rev": "0fa4cc26d8b1e5243570ccc0f7f66c4c428d2961",
+        "rev": "f50faa7bcb3878858ded13f7e4f5d4311b99ea50",
         "type": "github"
       },
       "original": {
-        "owner": "zmkfirmware",
-        "ref": "v3.5.0+zmk-fixes",
+        "owner": "petejohanson",
+        "ref": "v4.1.0+zmk-fixes",
         "repo": "zephyr",
         "type": "github"
       }
@@ -94,15 +94,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1743611519,
-        "narHash": "sha256-K9cA1igLWVnqM703cM5lEXoGSgKBAaPUnnfFsJo+XLM=",
-        "owner": "urob",
+        "lastModified": 1753934984,
+        "narHash": "sha256-1+5FO3Yg1bVz07mOr5XofwX1mT74nJc1fA/IEmqLBz0=",
+        "owner": "adisbladis",
         "repo": "zephyr-nix",
-        "rev": "3069faffa3692fc54a555c986c3a0d647bf5d7d0",
+        "rev": "d1d5f404a6109766ff41190d42e896d14f6eed1e",
         "type": "github"
       },
       "original": {
-        "owner": "urob",
+        "owner": "adisbladis",
         "repo": "zephyr-nix",
         "type": "github"
       }
