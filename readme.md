@@ -7,7 +7,7 @@ Difference from urob's zmk-config:
 - Supports extra modules for zmk-config and tests
 - Dev Container support
 - Tab completion for `just build` and `just flash` with fzf
-- `just flash` is added for UF2 loader (Only works on WSL with Nix, and requires PowerShell 7 installed on the host machine)
+- `just flash` is added for UF2 loader (Only works on WSL with Nix, and requires PowerShell installed on the host machine)
 - Automatically removes `.west` before `just init`
 
 > [!note]

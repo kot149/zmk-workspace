@@ -170,7 +170,7 @@ flash expr *args:
 
     echo "Flashing '$uf2_path'..."
     win_build_dir=$(wslpath -w "{{ out }}")
-    pwsh.exe -ExecutionPolicy Bypass -File flash.ps1 -BuildDir "$win_build_dir" -Uf2File "$uf2_file"
+    powershell.exe -ExecutionPolicy Bypass -File flash.ps1 -BuildDir "$win_build_dir" -Uf2File "$uf2_file"
 
 [no-cd]
 test $testpath *FLAGS:
