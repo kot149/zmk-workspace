@@ -3,7 +3,7 @@
 This repository is a workspace for building ZMK firmware, based on [urob's zmk-config](https://github.com/urob/zmk-config).
 
 Difference from urob's zmk-config:
-- zmk-config is isolated per keyboard in `config/zmk-config-<keyboard>` and added as submodules
+- zmk-config can also be in subdirectory of `config/` (while `config/` is still supported). This enables you to have multiple zmk-configs.
 - Supports extra modules for zmk-config and tests
 - Dev Container support
 - Tab completion for `just build` and `just flash` with fzf
@@ -30,7 +30,11 @@ Difference from urob's zmk-config:
    ```
 4. Init and select the target config
    ```sh
-   just init zmk-config-your-keyboard
+   just init config/zmk-config-your-keyboard
+   ```
+   Or if you prefer to treat zmk-workspace as the root of your zmk-config,
+   ```sh
+   just init config
    ```
    You can omit the config name to use fzf to select the config.
 5. Build

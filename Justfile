@@ -5,14 +5,44 @@ config := absolute_path('config')
 build := absolute_path('.build')
 out := absolute_path('firmware')
 draw := absolute_path('draw')
-zmk_config := `if [ -f .west/config ]; then sed -n 's|^file[[:space:]]*=[[:space:]]*\([^/]*\)/.*|\1|p' .west/config; else echo zmk-config-roBa; fi`
+zmk_config_root := `
+if [ -f .west/config ]; then
+  root=$(awk -F= '
+    BEGIN { p=""; f="" }
+    /^[[:space:]]*path[[:space:]]*=/ {
+      p=$2; gsub(/^[[:space:]]+|[[:space:]]+$/, "", p)
+    }
+    /^[[:space:]]*file[[:space:]]*=/ {
+      f=$2; gsub(/^[[:space:]]+|[[:space:]]+$/, "", f)
+    }
+    END {
+      if (p != "" && f != "") {
+        pf = p "/" f
+        if (f == "west.yml") {
+          print "."
+        } else {
+          sub(/\/config\/west\.yml$/, "", pf)
+          print pf
+        }
+      }
+    }
+  ' .west/config)
+else
+  root="."
+fi
+
+if [ "$root" = "." ]; then
+  realpath .
+else
+  realpath "$root"
+fi`
 
 # parse build.yaml and filter targets by expression
 _parse_targets $expr:
     #!/usr/bin/env bash
     attrs="[.board, .shield, .snippet, .\"artifact-name\"]"
     filter="(($attrs | map(. // [.]) | combinations), ((.include // {})[] | $attrs)) | join(\",\")"
-    echo "$(yq -r "$filter" "{{ config }}/{{ zmk_config }}/build.yaml" | grep -v "^," | grep -i "${expr/#all/.*}")"
+    echo "$(yq -r "$filter" "{{ zmk_config_root }}/build.yaml" | grep -v "^," | grep -i "${expr/#all/.*}")"
 
 # build firmware for single board & shield combination
 _build_single $board $shield $snippet $artifact *west_args:
@@ -20,17 +50,16 @@ _build_single $board $shield $snippet $artifact *west_args:
     set -euo pipefail
     artifact="${artifact:-${shield:+${shield// /+}-}${board}}"
     build_dir="{{ build / '$artifact' }}"
-    zmk_config_path="{{ config }}/{{ zmk_config }}"
 
     echo "Building firmware for $artifact..."
 
     # Check if zephyr/module.yml exists to determine whether to include DZMK_EXTRA_MODULES
-    if [[ -f "$zmk_config_path/zephyr/module.yml" ]]; then
+    if [[ -f "{{ zmk_config_root }}/zephyr/module.yml" ]]; then
         west build -s zmk/app -d "$build_dir" -b $board {{ west_args }} ${snippet:+-S "$snippet"} -- \
-            -DZMK_CONFIG="$zmk_config_path/config" -DZMK_EXTRA_MODULES="$zmk_config_path" ${shield:+-DSHIELD="$shield"}
+            -DZMK_CONFIG=""{{ zmk_config_root }}/config"" -DZMK_EXTRA_MODULES="{{ zmk_config_root }}" ${shield:+-DSHIELD="$shield"}
     else
         west build -s zmk/app -d "$build_dir" -b $board {{ west_args }} ${snippet:+-S "$snippet"} -- \
-            -DZMK_CONFIG="$zmk_config_path/config" ${shield:+-DSHIELD="$shield"}
+            -DZMK_CONFIG=""{{ zmk_config_root }}/config"" ${shield:+-DSHIELD="$shield"}
     fi
 
     if [[ -f "$build_dir/zephyr/zmk.uf2" ]]; then
@@ -71,34 +100,22 @@ draw:
     keymap -c "{{ draw }}/config.yaml" draw "{{ draw }}/base.yaml" -k "ferris/sweep" >"{{ draw }}/base.svg"
 
 # initialize west
-init *config_name:
+init *config_path:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # Get all zmk-config directories
-    config_dirs=$(find "{{ config }}" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
-
-    if [[ -z "$config_dirs" ]]; then
-        echo "No zmk-config directories found in config/." >&2
-        exit 1
-    fi
-
     # If config name is provided as argument, use it; otherwise use fzf
-    if [[ -n "{{ config_name }}" ]]; then
-        selected="{{ config_name }}"
-        # Validate that the provided config exists
-        if [[ ! -d "{{ config }}/$selected" ]]; then
-            echo "Config directory '{{ config }}/$selected' not found." >&2
-            echo "Available configs:" >&2
-            echo "$config_dirs" >&2
-            exit 1
-        fi
+    if [[ -n "{{ config_path }}" ]]; then
+        selected="{{ config_path }}"
     else
-        # Use fzf to select config
+        # Use fzf to select config from config/ and its subdirectories
+        subdirs=$(find "{{ config }}" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
+        config_dirs=$(printf "config\n"; printf "%s\n" "$subdirs" | sed 's#^#config/#')
+
         selected=$(echo "$config_dirs" | fzf \
             --prompt="Select ZMK config: " \
             --header="Choose a configuration to initialize" \
-            --preview="ls -1a {{ config }}/{}")
+            --preview="ls -1a {}")
 
         if [[ -z "$selected" ]]; then
             echo "No config selected. Exiting..."
@@ -106,9 +123,18 @@ init *config_name:
         fi
     fi
 
-    echo "Initializing with config: $selected"
+    # Determine west.yml path
+    if [[ -f "$selected/west.yml" ]]; then
+        west_yml_abs="$selected/west.yml"
+    else
+        west_yml_abs="$selected/config/west.yml"
+    fi
+
+    # Convert to path relative to config
+    west_yml_rel=$(realpath --relative-to="{{ config }}" "$west_yml_abs")
+
     rm -rf .west
-    west init -l config --mf "$selected/config/west.yml"
+    west init -l config --mf "$west_yml_rel"
     west update --fetch-opt=--filter=blob:none
     west zephyr-export
 
