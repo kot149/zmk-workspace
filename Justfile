@@ -3,37 +3,16 @@ default:
 
 build := absolute_path('.build')
 out := absolute_path('firmware')
-zmk_config_root := `
-if [ -f .west/config ]; then
-  root=$(awk -F= '
-    BEGIN { p=""; f="" }
-    /^[[:space:]]*path[[:space:]]*=/ {
-      p=$2; gsub(/^[[:space:]]+|[[:space:]]+$/, "", p)
-    }
-    /^[[:space:]]*file[[:space:]]*=/ {
-      f=$2; gsub(/^[[:space:]]+|[[:space:]]+$/, "", f)
-    }
-    END {
-      if (p != "" && f != "") {
-        pf = p "/" f
-        if (f == "west.yml") {
-          print "."
-        } else {
-          sub(/\/config\/west\.yml$/, "", pf)
-          print pf
-        }
-      }
-    }
-  ' .west/config)
-else
-  root="."
-fi
-
-if [ "$root" = "." ]; then
-  realpath .
-else
-  realpath "$root"
-fi`
+zmk_config_root := absolute_path(`
+  if [ -f .west/config ]; then
+    path=$(awk -F ' *= *' '/^ *path/ {print $2}' .west/config)
+    file=$(awk -F ' *= *' '/^ *file/ {print $2}' .west/config)
+    west_yml_path="${path:-.}/${file}"
+    echo "$(dirname $west_yml_path)/.."
+  else
+    echo "."
+  fi
+`)
 
 # parse build.yaml and filter targets by expression
 _parse_targets $expr:
