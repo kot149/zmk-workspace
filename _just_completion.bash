@@ -10,11 +10,12 @@ _just_completion() {
         # Handle init command completion with config directories
         if [[ -d "config" ]]; then
             local dirs
-            config_dirs=$(find config -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
+            subdirs=$(find config -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
+            candidates=$(printf "config\n"; printf "%s\n" "$subdirs" | sed 's#^#config/#')
 
-            if [[ -n "$config_dirs" ]]; then
+            if [[ -n "$candidates" ]]; then
                 local selected
-                selected=$(echo "$config_dirs" | fzf \
+                selected=$(echo "$candidates" | fzf \
                     --prompt="Select ZMK config: " \
                     --header="Choose a configuration to initialize" \
                     --preview="ls -1a config/{}" \
