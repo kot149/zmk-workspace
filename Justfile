@@ -1,10 +1,8 @@
 default:
     @just --list --unsorted
 
-config := absolute_path('config')
 build := absolute_path('.build')
 out := absolute_path('firmware')
-draw := absolute_path('draw')
 zmk_config_root := `
 if [ -f .west/config ]; then
   root=$(awk -F= '
@@ -91,47 +89,39 @@ clean-all: clean
 clean-nix:
     nix-collect-garbage --delete-old
 
-# parse & plot keymap
-draw:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    keymap -c "{{ draw }}/config.yaml" parse -z "{{ config }}/base.keymap" --virtual-layers Combos >"{{ draw }}/base.yaml"
-    yq -Yi '.combos.[].l = ["Combos"]' "{{ draw }}/base.yaml"
-    keymap -c "{{ draw }}/config.yaml" draw "{{ draw }}/base.yaml" -k "ferris/sweep" >"{{ draw }}/base.svg"
-
 # initialize west
 init *config_path:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # If config name is provided as argument, use it; otherwise use fzf
-    if [[ -n "{{ config_path }}" ]]; then
-        selected="{{ config_path }}"
-    else
-        # Use fzf to select config from config/ and its subdirectories
-        subdirs=$(find "{{ config }}" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
-        config_dirs=$(printf "config\n"; printf "%s\n" "$subdirs" | sed 's#^#config/#')
+    config_path="{{ config_path }}"
 
-        selected=$(echo "$config_dirs" | fzf \
+    # If config_path is provided as argument, use fzf to select it
+    if [[ -z "$config_path" ]]; then
+        # Use fzf to select config from config/ and its subdirectories
+        subdirs=$(find config -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
+        candidates=$(printf "config\n"; printf "%s\n" "$subdirs" | sed 's#^#config/#')
+
+        config_path=$(echo "$candidates" | fzf \
             --prompt="Select ZMK config: " \
             --header="Choose a configuration to initialize" \
-            --preview="ls -1a {}")
+            --preview="ls -1a config/{}")
 
-        if [[ -z "$selected" ]]; then
+        if [[ -z "$config_path" ]]; then
             echo "No config selected. Exiting..."
             exit 0
         fi
     fi
 
     # Determine west.yml path
-    if [[ -f "$selected/west.yml" ]]; then
-        west_yml_abs="$selected/west.yml"
+    if [[ -f "$config_path/west.yml" ]]; then
+        west_yml_abs="$config_path/west.yml"
     else
-        west_yml_abs="$selected/config/west.yml"
+        west_yml_abs="$config_path/config/west.yml"
     fi
 
     # Convert to path relative to config
-    west_yml_rel=$(realpath --relative-to="{{ config }}" "$west_yml_abs")
+    west_yml_rel=$(realpath --relative-to=config "$west_yml_abs")
 
     rm -rf .west
     west init -l config --mf "$west_yml_rel"
