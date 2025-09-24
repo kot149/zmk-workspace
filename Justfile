@@ -1,18 +1,25 @@
 default:
     @just --list --unsorted
 
-config := absolute_path('config')
 build := absolute_path('.build')
 out := absolute_path('firmware')
-draw := absolute_path('draw')
-zmk_config := `if [ -f .west/config ]; then sed -n 's|^file[[:space:]]*=[[:space:]]*\([^/]*\)/.*|\1|p' .west/config; else echo zmk-config-roBa; fi`
+zmk_config_root := absolute_path(`
+  if [ -f .west/config ]; then
+    path=$(awk -F ' *= *' '/^ *path/ {print $2}' .west/config)
+    file=$(awk -F ' *= *' '/^ *file/ {print $2}' .west/config)
+    west_yml_path="${path:-.}/${file}"
+    echo "$(dirname $west_yml_path)/.."
+  else
+    echo "."
+  fi
+`)
 
 # parse build.yaml and filter targets by expression
 _parse_targets $expr:
     #!/usr/bin/env bash
     attrs="[.board, .shield, .snippet, .\"artifact-name\"]"
     filter="(($attrs | map(. // [.]) | combinations), ((.include // {})[] | $attrs)) | join(\",\")"
-    echo "$(yq -r "$filter" "{{ config }}/{{ zmk_config }}/build.yaml" | grep -v "^," | grep -i "${expr/#all/.*}")"
+    echo "$(yq -r "$filter" "{{ zmk_config_root }}/build.yaml" | grep -v "^," | grep -i "${expr/#all/.*}")"
 
 # build firmware for single board & shield combination
 _build_single $board $shield $snippet $artifact *west_args:
@@ -20,17 +27,16 @@ _build_single $board $shield $snippet $artifact *west_args:
     set -euo pipefail
     artifact="${artifact:-${shield:+${shield// /+}-}${board}}"
     build_dir="{{ build / '$artifact' }}"
-    zmk_config_path="{{ config }}/{{ zmk_config }}"
 
     echo "Building firmware for $artifact..."
 
     # Check if zephyr/module.yml exists to determine whether to include DZMK_EXTRA_MODULES
-    if [[ -f "$zmk_config_path/zephyr/module.yml" ]]; then
+    if [[ -f "{{ zmk_config_root }}/zephyr/module.yml" ]]; then
         west build -s zmk/app -d "$build_dir" -b $board {{ west_args }} ${snippet:+-S "$snippet"} -- \
-            -DZMK_CONFIG="$zmk_config_path/config" -DZMK_EXTRA_MODULES="$zmk_config_path" ${shield:+-DSHIELD="$shield"}
+            -DZMK_CONFIG=""{{ zmk_config_root }}/config"" -DZMK_EXTRA_MODULES="{{ zmk_config_root }}" ${shield:+-DSHIELD="$shield"}
     else
         west build -s zmk/app -d "$build_dir" -b $board {{ west_args }} ${snippet:+-S "$snippet"} -- \
-            -DZMK_CONFIG="$zmk_config_path/config" ${shield:+-DSHIELD="$shield"}
+            -DZMK_CONFIG=""{{ zmk_config_root }}/config"" ${shield:+-DSHIELD="$shield"}
     fi
 
     if [[ -f "$build_dir/zephyr/zmk.uf2" ]]; then
@@ -62,53 +68,42 @@ clean-all: clean
 clean-nix:
     nix-collect-garbage --delete-old
 
-# parse & plot keymap
-draw:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    keymap -c "{{ draw }}/config.yaml" parse -z "{{ config }}/base.keymap" --virtual-layers Combos >"{{ draw }}/base.yaml"
-    yq -Yi '.combos.[].l = ["Combos"]' "{{ draw }}/base.yaml"
-    keymap -c "{{ draw }}/config.yaml" draw "{{ draw }}/base.yaml" -k "ferris/sweep" >"{{ draw }}/base.svg"
-
 # initialize west
-init *config_name:
+init *config_path:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # Get all zmk-config directories
-    config_dirs=$(find "{{ config }}" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
+    config_path="{{ config_path }}"
 
-    if [[ -z "$config_dirs" ]]; then
-        echo "No zmk-config directories found in config/." >&2
-        exit 1
-    fi
+    # If config_path is provided as argument, use fzf to select it
+    if [[ -z "$config_path" ]]; then
+        # Use fzf to select config from config/ and its subdirectories
+        subdirs=$(find config -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
+        candidates=$(printf "config\n"; printf "%s\n" "$subdirs" | sed 's#^#config/#')
 
-    # If config name is provided as argument, use it; otherwise use fzf
-    if [[ -n "{{ config_name }}" ]]; then
-        selected="{{ config_name }}"
-        # Validate that the provided config exists
-        if [[ ! -d "{{ config }}/$selected" ]]; then
-            echo "Config directory '{{ config }}/$selected' not found." >&2
-            echo "Available configs:" >&2
-            echo "$config_dirs" >&2
-            exit 1
-        fi
-    else
-        # Use fzf to select config
-        selected=$(echo "$config_dirs" | fzf \
+        config_path=$(echo "$candidates" | fzf \
             --prompt="Select ZMK config: " \
             --header="Choose a configuration to initialize" \
-            --preview="ls -1a {{ config }}/{}")
+            --preview="ls -1a config/{}")
 
-        if [[ -z "$selected" ]]; then
+        if [[ -z "$config_path" ]]; then
             echo "No config selected. Exiting..."
             exit 0
         fi
     fi
 
-    echo "Initializing with config: $selected"
+    # Determine west.yml path
+    if [[ -f "$config_path/west.yml" ]]; then
+        west_yml_abs="$config_path/west.yml"
+    else
+        west_yml_abs="$config_path/config/west.yml"
+    fi
+
+    # Convert to path relative to config
+    west_yml_rel=$(realpath --relative-to=config "$west_yml_abs")
+
     rm -rf .west
-    west init -l config --mf "$selected/config/west.yml"
+    west init -l config --mf "$west_yml_rel"
     west update --fetch-opt=--filter=blob:none
     west zephyr-export
 
@@ -170,7 +165,7 @@ flash expr *args:
 
     echo "Flashing '$uf2_path'..."
     win_build_dir=$(wslpath -w "{{ out }}")
-    pwsh.exe -ExecutionPolicy Bypass -File flash.ps1 -BuildDir "$win_build_dir" -Uf2File "$uf2_file"
+    powershell.exe -ExecutionPolicy Bypass -File flash.ps1 -BuildDir "$win_build_dir" -Uf2File "$uf2_file"
 
 [no-cd]
 test $testpath *FLAGS:
