@@ -94,15 +94,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1753934984,
-        "narHash": "sha256-1+5FO3Yg1bVz07mOr5XofwX1mT74nJc1fA/IEmqLBz0=",
-        "owner": "adisbladis",
+        "lastModified": 1758543734,
+        "narHash": "sha256-2Rc5DxtBXRlojC9BufB9aVP6oVo8Y7qV3U+fc5Pgm/8=",
+        "owner": "nix-community",
         "repo": "zephyr-nix",
-        "rev": "d1d5f404a6109766ff41190d42e896d14f6eed1e",
+        "rev": "b614ffaa1343beacaca254213451186af10e88f6",
         "type": "github"
       },
       "original": {
-        "owner": "adisbladis",
+        "owner": "nix-community",
         "repo": "zephyr-nix",
         "type": "github"
       }
