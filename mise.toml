@@ -6,6 +6,7 @@ ninja = "1.11"
 "pipx:west" = "latest"
 jq = "latest"
 uv = "latest"
+fzf = "latest"
 
 [env]
 _.python.venv = { path = ".venv", create = true }
@@ -15,7 +16,6 @@ CONFIG = "{{cwd}}/config"
 BUILD = "{{cwd}}/.build"
 OUT = "{{cwd}}/firmware"
 DRAW = "{{cwd}}/draw"
-ZMK_CONFIG = "zmk-config-roBa"
 ZEPHYR_BASE = "{{cwd}}/zephyr"
 ZEPHYR_SDK_INSTALL_DIR = "{{cwd}}/.zephyr-sdk"
 
@@ -51,14 +51,29 @@ if [[ -f $cconf ]]; then
 fi
 '''
 
+[tasks.get-zmk-config-root]
+description = "Get ZMK config root path from .west/config"
+run = '''
+#!/usr/bin/env bash
+if [ -f .west/config ]; then
+  path=$(awk -F ' *= *' '/^ *path/ {print $2}' .west/config)
+  file=$(awk -F ' *= *' '/^ *file/ {print $2}' .west/config)
+  west_yml_path="${path:-.}/${file}"
+  realpath "$(dirname "$(dirname "$west_yml_path")")"
+else
+  realpath "."
+fi
+'''
+
 [tasks.parse-targets]
 description = "Parse build.yaml and filter targets by expression"
 run = '''
 #!/usr/bin/env bash
 expr="${1:-all}"
+zmk_config_root=$(mise run get-zmk-config-root)
 attrs="[.board, .shield, .snippet, .\"artifact-name\"]"
 filter="(($attrs | map(. // [.]) | combinations), ((.include // {})[] | $attrs)) | join(\",\")"
-echo "$(yq -r "$filter" "$CONFIG/$ZMK_CONFIG/build.yaml" | grep -v "^," | grep -i "${expr/#all/.*}")"
+echo "$(yq -r "$filter" "$zmk_config_root/build.yaml" | grep -v "^," | grep -i "${expr/#all/.*}")"
 '''
 
 [tasks.build-single]
@@ -75,17 +90,16 @@ west_args="$@"
 
 artifact="${artifact:-${shield:+${shield// /+}-}${board}}"
 build_dir="$BUILD/$artifact"
-zmk_config_path="$CONFIG/$ZMK_CONFIG"
+zmk_config_root=$(mise run get-zmk-config-root)
 
 echo "Building firmware for $artifact..."
 
-# Check if zephyr/module.yml exists to determine whether to include DZMK_EXTRA_MODULES
-if [[ -f "$zmk_config_path/zephyr/module.yml" ]]; then
+if [[ -f "$zmk_config_root/zephyr/module.yml" ]]; then
     west build -s zmk/app -d "$build_dir" -b $board ${west_args} ${snippet:+-S "$snippet"} -- \
-        -DZMK_CONFIG="$zmk_config_path/config" -DZMK_EXTRA_MODULES="$zmk_config_path" ${shield:+-DSHIELD="$shield"}
+        -DZMK_CONFIG="$zmk_config_root/config" -DZMK_EXTRA_MODULES="$zmk_config_root" ${shield:+-DSHIELD="$shield"}
 else
     west build -s zmk/app -d "$build_dir" -b $board ${west_args} ${snippet:+-S "$snippet"} -- \
-        -DZMK_CONFIG="$zmk_config_path/config" ${shield:+-DSHIELD="$shield"}
+        -DZMK_CONFIG="$zmk_config_root/config" ${shield:+-DSHIELD="$shield"}
 fi
 
 if [[ -f "$build_dir/zephyr/zmk.uf2" ]]; then
@@ -123,7 +137,7 @@ rm -rf "$BUILD" "$OUT"
 description = "Clear all automatically generated files"
 depends = ["clean"]
 run = '''
-rm -rf .west zmk zephyr .zephyr-sdk .venv
+rm -rf .west zmk
 '''
 
 [tasks.clean-nix]
@@ -159,15 +173,43 @@ cd .zephyr-sdk && curl -L https://github.com/zephyrproject-rtos/sdk-ng/releases/
 [tasks.init]
 description = "Initialize west"
 run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+
+config_path="${1:-}"
+
+if [[ -z "$config_path" ]]; then
+    subdirs=$(find config -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
+    candidates=$(printf "config\n"; printf "%s\n" "$subdirs" | sed 's#^#config/#')
+
+    config_path=$(echo "$candidates" | fzf \
+        --prompt="Select ZMK config: " \
+        --header="Choose a configuration to initialize" \
+        --preview="ls -1a config/{}")
+
+    if [[ -z "$config_path" ]]; then
+        echo "No config selected. Exiting..."
+        exit 0
+    fi
+fi
+
+if [[ -f "$config_path/west.yml" ]]; then
+    west_yml_abs="$config_path/west.yml"
+else
+    west_yml_abs="$config_path/config/west.yml"
+fi
+
+west_yml_rel=$(realpath --relative-to=config "$west_yml_abs")
+
 rm -rf .west
-west init -l config --mf "$ZMK_CONFIG/config/west.yml"
+west init -l config --mf "$west_yml_rel"
 west update --fetch-opt=--filter=blob:none
 west zephyr-export
 '''
 
 [tasks.setup]
 description = "Complete ZMK development environment setup"
-depends = ["setup-zephyr-sdk", "init"]
+depends = ["setup-zephyr-sdk"]
 run = '''
 mise run setup-west-deps
 echo "ZMK development environment setup complete!"
@@ -226,9 +268,13 @@ if [[ -z "$target" ]]; then
     exit 1
 fi
 
-IFS=, read -r board shield snippet <<< "$target"
-artifact="${shield:+${shield// /+}-}${board}"
-uf2_file="$artifact.uf2"
+IFS=, read -r board shield snippet artifact <<< "$target"
+if [[ -n "$artifact" ]]; then
+    artifact_name="$artifact"
+else
+    artifact_name="${shield:+${shield// /+}-}${board}"
+fi
+uf2_file="$artifact_name.uf2"
 uf2_path="$OUT/$uf2_file"
 
 if [[ ! -f "$uf2_path" ]]; then
@@ -238,7 +284,7 @@ fi
 
 echo "Flashing '$uf2_path'..."
 win_build_dir=$(wslpath -w "$OUT")
-pwsh.exe -ExecutionPolicy Bypass -File flash.ps1 -BuildDir "$win_build_dir" -Uf2File "$uf2_file"
+powershell.exe -ExecutionPolicy Bypass -File flash.ps1 -BuildDir "$win_build_dir" -Uf2File "$uf2_file"
 '''
 
 [tasks.test]
@@ -258,7 +304,8 @@ if [[ "$FLAGS" != *"--no-build"* ]]; then
     echo "Running $testcase..."
     rm -rf "$build_dir"
     west build -s zmk/app -d "$build_dir" -b native_posix_64 -- \
-        -DCONFIG_ASSERT=y -DZMK_CONFIG="$config_dir"
+        -DCONFIG_ASSERT=y -DZMK_CONFIG="$config_dir" \
+        ${ZMK_EXTRA_MODULES:+-DZMK_EXTRA_MODULES="$(realpath ${ZMK_EXTRA_MODULES})"}
 fi
 
 ${build_dir}/zephyr/zmk.exe | sed -e "s/.*> //" |
