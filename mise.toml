@@ -125,6 +125,7 @@ keymap -c "$DRAW/config.yaml" draw "$DRAW/base.yaml" -k "ferris/sweep" >"$DRAW/b
 
 [tasks.setup-west-deps]
 description = "Install Zephyr Python dependencies"
+depends = ["init"]
 run = '''
 #!/usr/bin/env bash
 uv pip install -r zephyr/scripts/requirements.txt
