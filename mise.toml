@@ -111,12 +111,6 @@ run = '''
 rm -rf .west zmk
 '''
 
-[tasks.clean-nix]
-description = "Clear nix cache"
-run = '''
-nix-collect-garbage --delete-old
-'''
-
 [tasks.draw]
 description = "Parse & plot keymap"
 run = '''
