@@ -101,6 +101,7 @@ done
 [tasks.clean]
 description = "Clear build cache and artifacts"
 run = '''
+#!/usr/bin/env bash
 rm -rf "$BUILD" "$OUT"
 '''
 
@@ -108,6 +109,7 @@ rm -rf "$BUILD" "$OUT"
 description = "Clear all automatically generated files"
 depends = ["clean"]
 run = '''
+#!/usr/bin/env bash
 rm -rf .west zmk
 '''
 
@@ -124,12 +126,14 @@ keymap -c "$DRAW/config.yaml" draw "$DRAW/base.yaml" -k "ferris/sweep" >"$DRAW/b
 [tasks.setup-west-deps]
 description = "Install Zephyr Python dependencies"
 run = '''
+#!/usr/bin/env bash
 uv pip install -r zephyr/scripts/requirements.txt
 '''
 
 [tasks.setup-zephyr-sdk]
 description = "Download and install Zephyr SDK 0.16.3"
 run = '''
+#!/usr/bin/env bash
 mkdir -p .zephyr-sdk
 cd .zephyr-sdk && curl -L https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.3/zephyr-sdk-0.16.3_linux-x86_64.tar.xz | tar -xJ --strip-components=1
 ./setup.sh -h
@@ -176,6 +180,7 @@ west zephyr-export
 description = "Complete ZMK development environment setup"
 depends = ["setup-zephyr-sdk", "setup-west-deps"]
 run = '''
+#!/usr/bin/env bash
 echo "ZMK development environment setup complete!"
 echo "ZEPHYR_BASE: $ZEPHYR_BASE"
 echo "ZEPHYR_SDK_INSTALL_DIR: $ZEPHYR_SDK_INSTALL_DIR"
@@ -184,18 +189,21 @@ echo "ZEPHYR_SDK_INSTALL_DIR: $ZEPHYR_SDK_INSTALL_DIR"
 [tasks.list]
 description = "List build targets"
 run = '''
+#!/usr/bin/env bash
 mise run parse-targets all | sed 's/,*$//' | sort | column
 '''
 
 [tasks.update]
 description = "Update west"
 run = '''
+#!/usr/bin/env bash
 west update --fetch-opt=--filter=blob:none
 '''
 
 [tasks.upgrade-sdk]
 description = "Upgrade zephyr-sdk and python dependencies"
 run = '''
+#!/usr/bin/env bash
 echo !! This task is not implemented yet !!
 # nix flake update --flake .
 '''
