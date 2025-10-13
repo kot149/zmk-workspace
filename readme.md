@@ -20,7 +20,7 @@ Difference from urob's zmk-config:
 > [!important]
 > On Windows, it is recommended that the workspace be located on WSL-native location (outside of `/mnt/c/`). Syncing the directory between Windows and WSL / container will result in significantly slower builds.
 
-1. Clone this repo (use `--recursive` to also clone submodules)
+1. Clone this repo
 1. See [VSCode Docs](https://code.visualstudio.com/docs/devcontainers/containers) for Dev Conainer usage. Or, see [urob's zmk-config README](https://github.com/urob/zmk-config#local-build-environment) for Nix and direnv setup
 2. git clone your zmk-config into `config`
    ```sh
