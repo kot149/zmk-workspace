@@ -202,7 +202,8 @@ west update --fetch-opt=--filter=blob:none
 [tasks.upgrade-sdk]
 description = "Upgrade zephyr-sdk and python dependencies"
 run = '''
-nix flake update --flake .
+echo !! This task is not implemented yet !!
+# nix flake update --flake .
 '''
 
 [tasks.flash]
