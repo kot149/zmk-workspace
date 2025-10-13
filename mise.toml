@@ -82,7 +82,7 @@ echo "Building firmware for $artifact..."
 # Check if zephyr/module.yml exists to determine whether to include DZMK_EXTRA_MODULES
 if [[ -f "$zmk_config_path/zephyr/module.yml" ]]; then
     west build -s zmk/app -d "$build_dir" -b $board ${west_args} ${snippet:+-S "$snippet"} -- \
-        -DZMK_CONFIG="$zmk_config_path/config" -DZMK_EXTRA_MODULES="$zmk_config_path;/home/ku0143/keyboard/zmk-workspace/modules/zmk-mouse-gesture" ${shield:+-DSHIELD="$shield"}
+        -DZMK_CONFIG="$zmk_config_path/config" -DZMK_EXTRA_MODULES="$zmk_config_path" ${shield:+-DSHIELD="$shield"}
 else
     west build -s zmk/app -d "$build_dir" -b $board ${west_args} ${snippet:+-S "$snippet"} -- \
         -DZMK_CONFIG="$zmk_config_path/config" ${shield:+-DSHIELD="$shield"}
