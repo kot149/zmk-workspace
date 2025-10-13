@@ -180,9 +180,8 @@ west zephyr-export
 
 [tasks.setup]
 description = "Complete ZMK development environment setup"
-depends = ["setup-zephyr-sdk"]
+depends = ["setup-zephyr-sdk", "setup-west-deps"]
 run = '''
-mise run setup-west-deps
 echo "ZMK development environment setup complete!"
 echo "ZEPHYR_BASE: $ZEPHYR_BASE"
 echo "ZEPHYR_SDK_INSTALL_DIR: $ZEPHYR_SDK_INSTALL_DIR"
