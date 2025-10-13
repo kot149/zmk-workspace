@@ -7,4 +7,5 @@ zephyr
 .zephyr-sdk
 zmk
 draw/base.yaml
+.vscode/settings.json
 .venv

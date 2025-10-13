@@ -1,6 +1,0 @@
-[submodule "config/zmk-config-moNa2"]
-	path = config/zmk-config-moNa2
-	url = https://github.com/kot149/zmk-config-moNa2.git
-[submodule "config/zmk-config-roBa"]
-	path = config/zmk-config-roBa
-	url = https://github.com/kot149/zmk-config-roBa.git

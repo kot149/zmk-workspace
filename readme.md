@@ -3,10 +3,11 @@
 This repository is a workspace for building ZMK firmware, based on [urob's zmk-config](https://github.com/urob/zmk-config).
 
 Difference from urob's zmk-config:
-- zmk-config is isolated per keyboard in `config/zmk-config-<keyboard>` and added as submodules
-- Supports zmk-config which is also a module
+- zmk-config can also be in subdirectory of `config/` (while `config/` is still supported). This enables you to have multiple zmk-configs.
+- Supports extra modules for zmk-config and tests
 - Dev Container support
-- `just flash` is added for UF2 loader (Only works on WSL with Nix, and requires PowerShell 7 installed on the host machine)
+- Tab completion for `just build` and `just flash` with fzf
+- `just flash` is added for UF2 loader (Only works on WSL with Nix, and requires PowerShell installed on the host machine)
 - Automatically removes `.west` before `just init`
 
 > [!note]
@@ -17,27 +18,32 @@ Difference from urob's zmk-config:
 ### Local build environment
 
 > [!important]
-> On Windows, you are required to use WSL and it is recommended that the directory be located outside of `/mnt/c/`; syncing the directory between Windows and WSL will result in significantly slower builds.
+> When using Dev Container on Windows, it is recommended that the host directory also be located on WSL (and outside of `/mnt/c/`); syncing the directory between Windows and WSL (container) will result in significantly slower builds.
 
 1. Install [mise](https://mise.jdx.dev)
    ```sh
    curl https://mise.run | sh
    ```
-1. Clone this repo (use `--recursive` to also clone submodules)
+1. Clone this repo
 2. git clone your zmk-config into `config`
    ```sh
    cd config
    git clone https://github.com/your-username/zmk-config-your-keyboard
    cd ..
    ```
-3. Set `ZMK_CONFIG` environment variable
-   ```sh
-   export ZMK_CONFIG=zmk-config-your-keyboard
-   ```
-2. Setup
+3. Setup the environment
    ```sh
    mise setup
    ```
+4. Init and select the target config
+   ```sh
+   mise init config/zmk-config-your-keyboard
+   ```
+   Or if you prefer to treat zmk-workspace as the root of your zmk-config,
+   ```sh
+   mise init config
+   ```
+   You can omit the config name to use fzf to select the config.
 5. Build
    ```sh
    mise build [target]
@@ -50,3 +56,12 @@ Difference from urob's zmk-config:
    ```sh
    mise flash [target] -r
    ```
+
+## Tab completion
+
+With Dev Container or `nix develop` command, tab completion is enabled by default.
+
+Otherwise, manually run `source _just_completion.bash` on Zsh to enable tab completion.
+```sh
+source _just_completion.bash
+```
