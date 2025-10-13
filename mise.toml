@@ -22,35 +22,6 @@ ZEPHYR_SDK_INSTALL_DIR = "{{cwd}}/.zephyr-sdk"
 [settings.pipx]
 uvx = true
 
-[tasks.parse-combos]
-description = "Parse combos.dtsi and adjust settings to not run out of slots"
-run = '''
-#!/usr/bin/env bash
-set -euo pipefail
-cconf="$CONFIG/combos.dtsi"
-if [[ -f $cconf ]]; then
-    # set MAX_COMBOS_PER_KEY to the most frequent combos count
-    count=$(
-        tail -n +10 $cconf |
-            grep -Eo '[LR][TMBH][0-9]' |
-            sort | uniq -c | sort -nr |
-            awk 'NR==1{print $1}'
-    )
-    sed -Ei "/CONFIG_ZMK_COMBO_MAX_COMBOS_PER_KEY/s/=.+/=$count/" "$CONFIG"/*.conf
-    echo "Setting MAX_COMBOS_PER_KEY to $count"
-
-    # set MAX_KEYS_PER_COMBO to the most frequent key count
-    count=$(
-        tail -n +10 $cconf |
-            grep -o -n '[LR][TMBH][0-9]' |
-            cut -d : -f 1 | uniq -c | sort -nr |
-            awk 'NR==1{print $1}'
-    )
-    sed -Ei "/CONFIG_ZMK_COMBO_MAX_KEYS_PER_COMBO/s/=.+/=$count/" "$CONFIG"/*.conf
-    echo "Setting MAX_KEYS_PER_COMBO to $count"
-fi
-'''
-
 [tasks.get-zmk-config-root]
 description = "Get ZMK config root path from .west/config"
 run = '''
