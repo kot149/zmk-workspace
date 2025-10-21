@@ -1,15 +1,8 @@
 # Get command line arguments
 param(
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('L', 'R')]
-    [string]$Side = 'R',
-    [Parameter(Mandatory=$false)]
-    [string]$BuildDir = "firmware",
-    [Parameter(Mandatory=$false)]
-    [string]$Uf2File = "zmk.uf2"
+    [Parameter(Mandatory=$true)]
+    [string]$Uf2File
 )
-
-$Uf2File = Join-Path $BuildDir $Uf2File
 
 # Check if the drive is a UF2 loader
 function Test-IsUf2Loader {
