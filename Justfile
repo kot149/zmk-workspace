@@ -163,9 +163,20 @@ flash expr *args:
         exit 1
     fi
 
-    echo "Flashing '$uf2_path'..."
-    win_build_dir=$(wslpath -w "{{ out }}")
-    powershell.exe -ExecutionPolicy Bypass -File flash.ps1 -BuildDir "$win_build_dir" -Uf2File "$uf2_file"
+    # macOS
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "Flashing '$uf2_path'..."
+        ./flash.sh "$uf2_path"
+    # WSL
+    elif grep -q "Microsoft" /proc/version; then
+        echo "Flashing '$uf2_path'..."
+        win_build_dir=$(wslpath -w "{{ out }}")
+        powershell.exe -ExecutionPolicy Bypass -File flash.ps1 -BuildDir "$win_build_dir" -Uf2File "$uf2_file"
+    # Other: Not supported
+    else
+        echo "Flashing '$uf2_path' is not supported on this platform." >&2
+        exit 1
+    fi
 
 [no-cd]
 test $testpath *FLAGS:
