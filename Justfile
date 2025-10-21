@@ -168,10 +168,9 @@ flash expr *args:
         echo "Flashing '$uf2_path'..."
         ./flash.sh "$uf2_path"
     # WSL
-    elif grep -q "Microsoft" /proc/version; then
+    elif grep -q -i "Microsoft" /proc/version; then
         echo "Flashing '$uf2_path'..."
-        win_build_dir=$(wslpath -w "{{ out }}")
-        powershell.exe -ExecutionPolicy Bypass -File flash.ps1 -BuildDir "$win_build_dir" -Uf2File "$uf2_file"
+        powershell.exe -ExecutionPolicy Bypass -File flash.ps1 -Uf2File "$(wslpath -w $uf2_path)"
     # Other: Not supported
     else
         echo "Flashing '$uf2_path' is not supported on this platform." >&2
