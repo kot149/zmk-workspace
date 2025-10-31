@@ -21,11 +21,16 @@
         pkgs = nixpkgs.legacyPackages.${system};
         zephyr = zephyr-nix.packages.${system};
         keymap_drawer = pkgs.python3Packages.callPackage ./nix/keymap-drawer.nix {};
+        pythonEnv = pkgs.python3.withPackages (ps: [
+          ps.protobuf
+          ps.grpcio-tools
+        ]);
       in {
         default = pkgs.mkShellNoCC {
           packages =
             [
               zephyr.pythonEnv
+              pythonEnv
               (zephyr.sdk-0_16.override {targets = ["arm-zephyr-eabi"];})
 
               pkgs.cmake
@@ -36,6 +41,7 @@
               pkgs.just
               pkgs.yq # Make sure yq resolves to python-yq.
               pkgs.fzf
+              pkgs.protobuf
 
               keymap_drawer
 
