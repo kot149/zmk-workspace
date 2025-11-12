@@ -80,11 +80,20 @@ foreach ($drive in $initialDrives) {
 }
 
 Write-Host "No UF2 loader found in existing drives."
-Write-Host "Waiting for new UF2 loader drive... (Press Ctrl+C to cancel)"
+Write-Host "Waiting for new UF2 loader drive... (Press 'q' to cancel)"
 
 try {
     while ($true) {
-        Start-Sleep -Milliseconds 500
+        # Check if a key is pressed
+        if ([Console]::KeyAvailable) {
+            $key = [Console]::ReadKey($true)
+            if ($key.KeyChar -eq 'q' -or $key.KeyChar -eq 'Q') {
+                Write-Host "`nCancelled."
+                exit 0
+            }
+        }
+
+        Start-Sleep -Milliseconds 100
         $currentDrives = Get-PSDrive -PSProvider FileSystem
 
         # Detect new drives
@@ -110,10 +119,6 @@ try {
             $initialDrives = $currentDrives
         }
     }
-}
-catch [System.Management.Automation.Host.HostException] {
-    Write-Host "`nCancelled."
-    exit 0
 }
 catch {
     Write-Error "An error occurred: $_"
