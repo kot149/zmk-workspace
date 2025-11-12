@@ -73,11 +73,18 @@ for drive_path in /Volumes/*; do
 done
 
 # If not found, wait for a new drive to be connected
-echo "No UF2 loader found. Waiting for new drive... (Press Ctrl+C to cancel)"
+echo "No UF2 loader found. Waiting for new drive... (Press 'q' to cancel)"
 before_drives_str=$(find /Volumes -maxdepth 1 -mindepth 1 -exec basename {} \;)
 
 while true; do
-    sleep 0.5
+    # Check for 'q' key press (non-blocking)
+    if read -t 1 -n 1 key 2>/dev/null; then
+        if [[ "$key" == "q" ]]; then
+            echo -e "\nCancelled by user."
+            exit 0
+        fi
+    fi
+
     after_drives_str=$(find /Volumes -maxdepth 1 -mindepth 1 -exec basename {} \;)
     new_drive_names=$(comm -13 <(echo "$before_drives_str" | sort) <(echo "$after_drives_str" | sort))
 
