@@ -26,7 +26,10 @@ _build_single $board $shield $snippet $artifact *west_args:
     #!/usr/bin/env bash
     set -euo pipefail
     artifact="${artifact:-${shield:+${shield// /+}-}${board}}"
-    build_dir="{{ build / '$artifact' }}"
+
+    # Board ids may contain '/' (e.g. xiao_ble//zmk). Slashes break cp paths and mkdir.
+    artifact_fs="${artifact//\//-}"
+    build_dir="{{ build / '$artifact_fs' }}"
 
     echo "Building firmware for $artifact..."
 
@@ -40,9 +43,9 @@ _build_single $board $shield $snippet $artifact *west_args:
     fi
 
     if [[ -f "$build_dir/zephyr/zmk.uf2" ]]; then
-        mkdir -p "{{ out }}" && cp "$build_dir/zephyr/zmk.uf2" "{{ out }}/$artifact.uf2"
+        mkdir -p "{{ out }}" && cp "$build_dir/zephyr/zmk.uf2" "{{ out }}/$artifact_fs.uf2"
     else
-        mkdir -p "{{ out }}" && cp "$build_dir/zephyr/zmk.bin" "{{ out }}/$artifact.bin"
+        mkdir -p "{{ out }}" && cp "$build_dir/zephyr/zmk.bin" "{{ out }}/$artifact_fs.bin"
     fi
 
 # build firmware for matching targets
@@ -155,7 +158,8 @@ flash expr *args:
     else
         artifact_name="${shield:+${shield// /+}-}${board}"
     fi
-    uf2_file="$artifact_name.uf2"
+    artifact_fs="${artifact_name//\//-}"
+    uf2_file="$artifact_fs.uf2"
     uf2_path="{{ out }}/$uf2_file"
 
     if [[ ! -f "$uf2_path" ]]; then
