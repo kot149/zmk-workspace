@@ -12,6 +12,8 @@
   },
   "workspaceFolder": "/zmk-workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=/zmk-workspace,type=bind,consistency=cached",
+  "remoteUser": "ubuntu",
+  "updateRemoteUserUID": true,
   "customizations": {
     "vscode": {
       "extensions": ["ms-vscode.cpptools"],
@@ -19,5 +21,6 @@
         "terminal.integrated.shell.linux": "/bin/bash"
       }
     }
-  }
+  },
+  "postCreateCommand": "echo 'source /zmk-workspace/_just_completion.bash' >> ~/.bashrc"
 }
