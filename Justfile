@@ -2,7 +2,6 @@ default:
     @just --list --unsorted
 
 build := absolute_path('.build')
-out := absolute_path('firmware')
 zmk_config_root := absolute_path(`
   if [ -f .west/config ]; then
     path=$(awk -F ' *= *' '/^ *path/ {print $2}' .west/config)
@@ -13,6 +12,8 @@ zmk_config_root := absolute_path(`
     echo "."
   fi
 `)
+firmware := absolute_path('firmware')
+out := firmware / file_name(zmk_config_root)
 
 # parse build.yaml and filter targets by expression
 _parse_targets $expr:
