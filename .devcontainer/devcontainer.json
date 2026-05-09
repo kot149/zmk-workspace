@@ -19,6 +19,5 @@
         "terminal.integrated.shell.linux": "/bin/bash"
       }
     }
-  },
-  "forwardPorts": [3000]
+  }
 }
