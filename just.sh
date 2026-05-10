@@ -5,6 +5,7 @@ repo_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 image="${ZMK_WORKSPACE_CONTAINER_IMAGE:-zmk-workspace-dev:latest}"
 workspace="/zmk-workspace"
 ccache_dir="$repo_dir/.cache/ccache"
+container_home_dir="$repo_dir/.cache/home"
 dockerfile="$repo_dir/.devcontainer/Dockerfile"
 
 _abspath() {
@@ -82,11 +83,15 @@ if [[ "${1:-}" == "flash" ]]; then
         exec "$repo_dir/flash.sh" "$uf2_path"
     elif grep -q -i "Microsoft" /proc/version; then
         echo "Flashing '$uf2_path'..."
-        exec powershell.exe -ExecutionPolicy Bypass -File "$repo_dir/flash.ps1" -Uf2File "$(wslpath -w "$uf2_path")"
+        exec powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w "$repo_dir/flash.ps1")" -Uf2File "$(wslpath -w "$uf2_path")"
     else
         echo "Flashing '$uf2_path' is not supported on this platform." >&2
         exit 1
     fi
+fi
+
+if [[ "${IN_ZMK_CONTAINER:-}" == "1" ]] || [[ -n "${IN_NIX_SHELL:-}" ]]; then
+    exec just "$@"
 fi
 
 dockerfile_hash="$(_sha256sum "$dockerfile" | awk '{print $1}')"
@@ -100,16 +105,20 @@ if [[ "$image_hash" != "$dockerfile_hash" ]]; then
 fi
 
 mkdir -p "$ccache_dir"
+mkdir -p "$container_home_dir"
 
 docker_tty_args=()
 if [[ -t 0 && -t 1 ]]; then
     docker_tty_args=(-it)
 fi
 
+docker_nofile_ulimit="${ZMK_WORKSPACE_DOCKER_NOFILE:-65536:65536}"
+
 exec docker run --rm \
     "${docker_tty_args[@]}" \
     --user "$(id -u):$(id -g)" \
-    --env HOME=/tmp \
+    --ulimit "nofile=$docker_nofile_ulimit" \
+    --env HOME="$workspace/.cache/home" \
     --env IN_ZMK_CONTAINER=1 \
     --env TERM="${TERM:-xterm-256color}" \
     --env CCACHE_DIR="$workspace/.cache/ccache" \
