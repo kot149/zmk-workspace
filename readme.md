@@ -13,59 +13,52 @@ Difference from urob's zmk-config:
 
 ## Usage
 
-### Local build environment (WSL)
+Two build environment options are available. Choose one:
+
+- **Docker** — use `./just.sh <command>`. The script builds and runs commands inside Docker automatically.
+- **Nix / direnv** — enter `nix develop` (or use direnv), then use `just <command>` directly. `./just.sh` is not needed.
+
+For Dev Container usage, see [VSCode Docs](https://code.visualstudio.com/docs/devcontainers/containers).
+For Nix and direnv setup, See [urob's zmk-config README](https://github.com/urob/zmk-config#local-build-environment).
 
 > [!important]
 > On Windows, it is recommended that the workspace be located on WSL-native location (outside of `/mnt/c/`). Syncing the directory between Windows and WSL / container will result in significantly slower builds.
 
-On WSL, you can edit files directly in the WSL workspace and run `./just.sh init`, `./just.sh build`, `./just.sh flash`, etc. from WSL. Build-related commands execute `just` and the ZMK toolchain inside Docker using `.devcontainer/Dockerfile`, while generated files remain owned by your WSL user.
-
-Builds use `ccache` inside the container. The cache is stored at `.cache/ccache` on the WSL filesystem and is ignored by Git. You can inspect it with `./just.sh ccache-stats` and clear it with `./just.sh clean-ccache`. The default cache limit is 5 GiB; override it with `ZMK_WORKSPACE_CCACHE_MAXSIZE=10G ./just.sh build all`.
-
 1. Clone this repo
-1. See [VSCode Docs](https://code.visualstudio.com/docs/devcontainers/containers) for Dev Container usage. Or, see [urob's zmk-config README](https://github.com/urob/zmk-config#local-build-environment) for Nix and direnv setup
+   ```sh
+   git clone https://github.com/kot149/zmk-workspace.git
+   cd zmk-workspace
+   ```
 2. git clone your zmk-config into `config`
    ```sh
    cd config
    git clone https://github.com/your-username/zmk-config-your-keyboard
    cd ..
    ```
+3. Enter the Nix shell
+   ```sh
+   nix develop
+   ```
+   or
+   ```sh
+   direnv allow
+   ```
 4. Init and select the target config
    ```sh
-   ./just.sh init config/zmk-config-your-keyboard
+   just init config/zmk-config-your-keyboard
    ```
-   Or if you prefer to treat zmk-workspace as the root of your zmk-config,
-   ```sh
-   ./just.sh init config
-   ```
-   You can omit the config name to use fzf to select the config.
 5. Build
    ```sh
-   ./just.sh build [target]
+   just build [target]
    ```
 6. Flash
    ```sh
-   ./just.sh flash [target]
-   ```
-   or you can specify `-r` to build before flashing
-   ```sh
-   ./just.sh flash [target] -r
+   just flash [target]
    ```
 7. Draw keymap
    ```sh
-   just draw
+   just draw-keymap
    ```
-   Generated files are written to `keymap-drawer/<name>.yaml` and `keymap-drawer/<name>.svg` under the active ZMK config.
-
-7. Draw keymap
-   ```sh
-   ./just.sh draw-keymap
-   ```
-   or draw a specific `config/*.keymap` basename
-   ```sh
-   ./just.sh draw-keymap myboard
-   ```
-   This also regenerates `config/<name>.json` from the ZMK physical layout before drawing.
 
 ## Tab completion
 
@@ -78,9 +71,9 @@ source ./_just_completion.bash
 Then use `Tab` after `./just.sh`:
 
 ```sh
-./just.sh <Tab>
-./just.sh build <Tab>
-./just.sh init <Tab>
+just <Tab>
+just build <Tab>
+just init <Tab>
 ```
 
 To enable it automatically in Bash, add this to `~/.bashrc`:
@@ -89,6 +82,4 @@ To enable it automatically in Bash, add this to `~/.bashrc`:
 source /path/to/zmk-workspace/_just_completion.bash
 ```
 
-The completion works with `./just.sh` on WSL. If `fzf` is installed on the host, target/config selection uses an interactive picker; otherwise it falls back to normal Bash completion candidates.
-
-With Dev Container or `nix develop`, tab completion is enabled by default via `postCreateCommand`.
+If `fzf` is installed on the host, target/config selection uses an interactive picker; otherwise it falls back to normal Bash completion candidates.
