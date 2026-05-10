@@ -1,4 +1,5 @@
 .build
+.cache
 .direnv
 .west
 modules
@@ -7,3 +8,4 @@ zephyr
 zmk
 draw/base.yaml
 .vscode/settings.json
+__pycache__
