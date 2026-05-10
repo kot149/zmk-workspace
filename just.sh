@@ -8,7 +8,7 @@ ccache_dir="$repo_dir/.cache/ccache"
 dockerfile="$repo_dir/.devcontainer/Dockerfile"
 
 _abspath() {
-    python3 -c "import os,sys; print(os.path.abspath(sys.argv[1]))" "$1"
+    (CDPATH= cd -- "$1" && pwd -P)
 }
 
 _sha256sum() {

@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 
 
-def load_text(input_path, _visited=None):
+def load_text(input_path, dts_include_dirs=(), _visited=None):
     if _visited is None:
         _visited = set()
     resolved = input_path.resolve()
@@ -17,7 +17,13 @@ def load_text(input_path, _visited=None):
     for m in re.finditer(r'#include\s+"([^"]+)"', text):
         inc = input_path.parent / m.group(1)
         if inc.exists():
-            parts.append(load_text(inc, _visited))
+            parts.append(load_text(inc, dts_include_dirs, _visited))
+    for m in re.finditer(r'#include\s+<([^>]+)>', text):
+        for search_dir in dts_include_dirs:
+            inc = Path(search_dir) / m.group(1)
+            if inc.exists():
+                parts.append(load_text(inc, dts_include_dirs, _visited))
+                break
     return "\n".join(parts)
 
 
@@ -103,8 +109,8 @@ def parse_transform_positions(text, layout_block):
     ]
 
 
-def generate(input_path, output_path, layout_name, keyboard_id, keyboard_name):
-    text = load_text(input_path)
+def generate(input_path, output_path, layout_name, keyboard_id, keyboard_name, dts_include_dirs=()):
+    text = load_text(input_path, dts_include_dirs)
     if not layout_name:
         layout_name = detect_layout_label(text)
     layout_block = find_labeled_block(text, layout_name)
@@ -143,11 +149,13 @@ def main():
     parser.add_argument("--layout", default=None, help="Physical layout node label (auto-detected if omitted)")
     parser.add_argument("--id", default=None, help="Keyboard id for new JSON files")
     parser.add_argument("--name", default=None, help="Keyboard name for new JSON files")
+    parser.add_argument("--dts-include-dirs", nargs="*", default=[], metavar="DIR",
+                        help="Directories to search for angle-bracket DTS includes")
     args = parser.parse_args()
 
     keyboard_id = args.id or args.output.stem
     keyboard_name = args.name or keyboard_id
-    generate(args.input, args.output, args.layout, keyboard_id, keyboard_name)
+    generate(args.input, args.output, args.layout, keyboard_id, keyboard_name, args.dts_include_dirs)
 
 
 if __name__ == "__main__":

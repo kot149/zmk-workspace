@@ -8,7 +8,8 @@
     "WORKSPACE_DIR": "${containerWorkspaceFolder}",
     "PROMPT_COMMAND": "history -a",
     "ZMK_BUILD_DIR": "${containerWorkspaceFolder}/.build",
-    "ZMK_SRC_DIR": "${containerWorkspaceFolder}/zmk/app"
+    "ZMK_SRC_DIR": "${containerWorkspaceFolder}/zmk/app",
+    "IN_ZMK_CONTAINER": "1"
   },
   "workspaceFolder": "/zmk-workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=/zmk-workspace,type=bind,consistency=cached",

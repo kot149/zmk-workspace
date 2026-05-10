@@ -19,8 +19,21 @@ _just_completion() {
     fi
 
     if [[ $COMP_CWORD -eq 1 ]]; then
-        local recipes
-        recipes=$("${just_cmd[@]}" --summary 2>/dev/null)
+        local recipes=""
+        if [[ "$(basename "$invoked")" == "just.sh" ]]; then
+            local justfile_dir justfile
+            justfile_dir="$(dirname -- "$invoked")"
+            justfile="${justfile_dir}/Justfile"
+            if command -v just >/dev/null 2>&1 && [[ -f "$justfile" ]]; then
+                recipes=$(just --summary --justfile "$justfile" 2>/dev/null)
+            elif [[ -f "$justfile" ]]; then
+                recipes=$(grep -E '^[a-zA-Z][a-zA-Z0-9_-]*([[:space:]]|:)' "$justfile" 2>/dev/null \
+                    | grep -v '^_' | grep ':' | grep -v ':=' \
+                    | sed 's/[[:space:]].*$//' | sort -u | tr '\n' ' ')
+            fi
+        else
+            recipes=$("${just_cmd[@]}" --summary 2>/dev/null)
+        fi
         COMPREPLY=($(compgen -W "$recipes" -- "$cur"))
         return 0
     fi
