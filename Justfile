@@ -45,6 +45,11 @@ _build_single $board $shield $snippet $artifact *west_args:
 
     echo "Building firmware for $artifact..."
 
+    if [[ -z "${CMAKE_BUILD_PARALLEL_LEVEL:-}" ]]; then
+        export CMAKE_BUILD_PARALLEL_LEVEL="${ZMK_WORKSPACE_BUILD_JOBS:-2}"
+        echo "Using CMAKE_BUILD_PARALLEL_LEVEL=$CMAKE_BUILD_PARALLEL_LEVEL"
+    fi
+
     # Check if zephyr/module.yml exists to determine whether to include DZMK_EXTRA_MODULES
     if [[ -f "{{ zmk_config_root }}/zephyr/module.yml" ]]; then
         west build -s zmk/app -d "$build_dir" -b $board {{ west_args }} ${snippet:+-S "$snippet"} -- \
@@ -187,7 +192,7 @@ draw-keymap *names:
 
     requested=({{ names }})
     if [[ ${#requested[@]} -eq 0 ]]; then
-        mapfile -t requested < <(find "$config_root/config" -maxdepth 1 -type f -name "*.keymap" -printf "%f\n" | sed "s/\.keymap$//" | sort)
+        mapfile -t requested < <(find "$config_root/config" -maxdepth 1 -type f -name "*.keymap" -printf "%f\n" | sed "s/\\.keymap$//" | sort)
     fi
 
     if [[ ${#requested[@]} -eq 0 ]]; then
@@ -240,7 +245,6 @@ draw-keymap *names:
                 fi
             fi
         fi
-
         if [[ -z "$dtsi_file" ]] && [[ -d "{{ justfile_directory() }}/modules" ]]; then
             if [[ -f "$config_root/west.yml" ]]; then
                 west_yml="$config_root/west.yml"
@@ -264,7 +268,6 @@ draw-keymap *names:
             fi
             dtsi_file="${module_matches[0]:-}"
         fi
-
         if [[ -z "$dtsi_file" ]] && [[ -d "{{ justfile_directory() }}/zmk/app/boards" ]]; then
             mapfile -t zmk_matches < <(find "{{ justfile_directory() }}/zmk/app/boards" -type f \( -name "$name.dts" -o -name "$name.dtsi" -o -name "$name.overlay" \) 2>/dev/null | sort)
             if [[ ${#zmk_matches[@]} -gt 1 ]]; then
@@ -274,7 +277,6 @@ draw-keymap *names:
             fi
             dtsi_file="${zmk_matches[0]:-}"
         fi
-
         if [[ -z "$json_file" && -z "$dtsi_file" ]]; then
             echo "Physical layout source not found for '$name'" >&2
             exit 1
