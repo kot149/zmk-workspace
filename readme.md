@@ -10,9 +10,6 @@ Difference from urob's zmk-config:
 - `just flash` is added for UF2 loader (Only works on Winodws(WSL) or macOS with Nix)
 - Automatically removes `.west` before `just init`
 
-> [!note]
-> keymap-drawer is not compatible with this setup.
-
 ## Usage
 
 ### Local build environment
@@ -49,6 +46,11 @@ Difference from urob's zmk-config:
    ```sh
    just flash [target] -r
    ```
+7. Draw keymap
+   ```sh
+   just draw-keymap
+   ```
+   Generated files are written to `keymap-drawer/<name>.yaml` and `keymap-drawer/<name>.svg` under the active ZMK config.
 
 ## Tab completion
 

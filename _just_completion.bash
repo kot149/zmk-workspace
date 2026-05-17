@@ -6,6 +6,13 @@ _just_completion() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
+    if [[ $COMP_CWORD -eq 1 ]]; then
+        local recipes
+        recipes=$(just --summary 2>/dev/null)
+        [[ -n "$recipes" ]] && COMPREPLY=($(compgen -W "$recipes" -- "$cur"))
+        return
+    fi
+
     if [[ "${COMP_WORDS[1]}" == "init" ]]; then
         # Handle init command completion with config directories
         if [[ -d "config" ]]; then
@@ -19,6 +26,20 @@ _just_completion() {
                     --prompt="Select ZMK config: " \
                     --header="Choose a configuration to initialize" \
                     --preview="ls -1a config/{}" \
+                    --query="$cur")
+                [[ -n "$selected" ]] && COMPREPLY=("$selected")
+                return
+            fi
+        fi
+    elif [[ "${COMP_WORDS[1]}" == "draw-keymap" ]]; then
+        if [[ -d "config" ]]; then
+            local keymaps selected
+            keymaps=$(find config -maxdepth 2 -type f -name "*.keymap" -printf "%f\n" | sed 's/\.keymap$//' | sort -u)
+
+            if [[ -n "$keymaps" ]]; then
+                selected=$(echo "$keymaps" | fzf \
+                    --prompt="Select keymap: " \
+                    --header="Choose keymap to draw" \
                     --query="$cur")
                 [[ -n "$selected" ]] && COMPREPLY=("$selected")
                 return

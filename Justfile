@@ -119,6 +119,126 @@ list:
 update:
     west update --fetch-opt=--filter=blob:none
 
+# draw keymap SVGs with keymap-drawer
+draw-keymap *names:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    config_root="{{ zmk_config_root }}"
+    keymap_dir="$config_root/keymap-drawer"
+    keymap_config="$keymap_dir/config.yaml"
+    mkdir -p "$keymap_dir"
+
+    keymap_config_args=()
+    if [[ -f "$keymap_config" ]]; then
+        keymap_config_args=(-c "$keymap_config")
+    fi
+
+    requested=({{ names }})
+    if [[ ${#requested[@]} -eq 0 ]]; then
+        mapfile -t requested < <(find "$config_root/config" -maxdepth 1 -type f -name "*.keymap" -printf "%f\n" | sed "s/\.keymap$//" | sort)
+    fi
+
+    if [[ ${#requested[@]} -eq 0 ]]; then
+        echo "No keymap files found in $config_root/config" >&2
+        exit 1
+    fi
+
+    for name in "${requested[@]}"; do
+        keymap_file="$config_root/config/$name.keymap"
+        yaml_file="$keymap_dir/$name.yaml"
+        svg_file="$keymap_dir/$name.svg"
+
+        if [[ ! -f "$keymap_file" ]]; then
+            echo "Keymap file not found: $keymap_file" >&2
+            exit 1
+        fi
+
+        json_file=""
+        if [[ -f "$config_root/config/$name.json" ]]; then
+            json_file="$config_root/config/$name.json"
+        fi
+
+        board_search_dirs=()
+        [[ -d "$config_root/boards" ]] && board_search_dirs+=("$config_root/boards")
+        [[ -d "$config_root/config/boards" ]] && board_search_dirs+=("$config_root/config/boards")
+
+        dtsi_file=""
+        if [[ ${#board_search_dirs[@]} -gt 0 ]]; then
+            dtsi_file=$(find "${board_search_dirs[@]}" -type f \( -name "$name.dts" -o -name "$name.dtsi" -o -name "$name.overlay" \) 2>/dev/null | sort | head -n 1)
+            if [[ -z "$dtsi_file" ]]; then
+                base_name="$name"
+                for suffix in _left _right _central _peripheral; do
+                    if [[ "$name" == *"$suffix" ]]; then
+                        base_name="${name%$suffix}"
+                        break
+                    fi
+                done
+                if [[ "$base_name" != "$name" ]]; then
+                    dtsi_file=$(find "${board_search_dirs[@]}" -type f \( -name "$base_name.dts" -o -name "$base_name.dtsi" -o -name "$base_name.overlay" -o -name "${base_name}-layouts.dtsi" \) 2>/dev/null | sort | head -n 1)
+                fi
+            fi
+            if [[ -z "$dtsi_file" ]]; then
+                mapfile -t board_matches < <(find "${board_search_dirs[@]}" -type f \( -name "*.dtsi" -o -name "*.overlay" \) 2>/dev/null | sort)
+                if [[ ${#board_matches[@]} -eq 1 ]]; then
+                    dtsi_file="${board_matches[0]}"
+                elif [[ ${#board_matches[@]} -gt 1 ]]; then
+                    echo "Physical layout source for '$name' is ambiguous; multiple candidates found in boards/:" >&2
+                    printf '  %s\n' "${board_matches[@]}" >&2
+                    exit 1
+                fi
+            fi
+        fi
+
+        if [[ -z "$dtsi_file" ]] && [[ -d "{{ justfile_directory() }}/modules" ]]; then
+            if [[ -f "$config_root/west.yml" ]]; then
+                west_yml="$config_root/west.yml"
+            else
+                west_yml="$config_root/config/west.yml"
+            fi
+            module_search_dirs=()
+            if [[ -f "$west_yml" ]]; then
+                while IFS= read -r mp; do
+                    [[ "$mp" == modules/* ]] || continue
+                    full_mp="{{ justfile_directory() }}/$mp"
+                    [[ -d "$full_mp" ]] && module_search_dirs+=("$full_mp")
+                done < <(yq -r '.manifest.projects[] | (.path // .name)' "$west_yml" 2>/dev/null)
+            fi
+            [[ ${#module_search_dirs[@]} -eq 0 ]] && module_search_dirs=("{{ justfile_directory() }}/modules")
+            mapfile -t module_matches < <(find "${module_search_dirs[@]}" -type f \( -name "$name.dts" -o -name "$name.dtsi" -o -name "$name.overlay" \) 2>/dev/null | sort)
+            if [[ ${#module_matches[@]} -gt 1 ]]; then
+                echo "Multiple physical layout sources found for '$name' in modules; place the correct file in $config_root/boards/ or $config_root/config/boards/ to resolve ambiguity:" >&2
+                printf '  %s\n' "${module_matches[@]}" >&2
+                exit 1
+            fi
+            dtsi_file="${module_matches[0]:-}"
+        fi
+
+        if [[ -z "$dtsi_file" ]] && [[ -d "{{ justfile_directory() }}/zmk/app/boards" ]]; then
+            mapfile -t zmk_matches < <(find "{{ justfile_directory() }}/zmk/app/boards" -type f \( -name "$name.dts" -o -name "$name.dtsi" -o -name "$name.overlay" \) 2>/dev/null | sort)
+            if [[ ${#zmk_matches[@]} -gt 1 ]]; then
+                echo "Multiple physical layout sources found for '$name' in zmk/app/boards; place the correct file in $config_root/boards/ to resolve ambiguity:" >&2
+                printf '  %s\n' "${zmk_matches[@]}" >&2
+                exit 1
+            fi
+            dtsi_file="${zmk_matches[0]:-}"
+        fi
+
+        if [[ -z "$json_file" && -z "$dtsi_file" ]]; then
+            echo "Physical layout source not found for '$name'" >&2
+            exit 1
+        fi
+
+        echo "Drawing keymap for $name..."
+        keymap "${keymap_config_args[@]}" parse -z "$keymap_file" -o "$yaml_file"
+        if [[ -n "$json_file" ]]; then
+            keymap "${keymap_config_args[@]}" draw "$yaml_file" -j "$json_file" -o "$svg_file"
+        else
+            keymap "${keymap_config_args[@]}" draw "$yaml_file" -d "$dtsi_file" -o "$svg_file"
+        fi
+        echo "Wrote $svg_file"
+    done
+
 # upgrade zephyr-sdk and python dependencies
 upgrade-sdk:
     nix flake update --flake .
