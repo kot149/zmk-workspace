@@ -38,6 +38,7 @@ Difference from urob's zmk-config:
    ```sh
    just build [target]
    ```
+   Builds are performed in `.build/<target>` and artifacts are copied to `firmware/<config-name>/<target>`.
 6. Flash
    ```sh
    just flash [target]
