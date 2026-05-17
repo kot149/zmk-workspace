@@ -15,9 +15,20 @@ zmk_config_root := absolute_path(`
 firmware := absolute_path('firmware')
 out := firmware / file_name(zmk_config_root)
 
+# run a just recipe in the build container
+_container *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    exec "{{ justfile_directory() }}/just.sh" {{ args }}
+
 # parse build.yaml and filter targets by expression
 _parse_targets $expr:
     #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ "${IN_ZMK_CONTAINER:-0}" != "1" && -z "${IN_NIX_SHELL:-}" ]]; then
+        exec just _container _parse_targets "{{ expr }}"
+    fi
+
     attrs="[.board, .shield, .snippet, .\"artifact-name\"]"
     filter="(($attrs | map(. // [.]) | combinations), ((.include // {})[] | $attrs)) | join(\",\")"
     echo "$(yq -r "$filter" "{{ zmk_config_root }}/build.yaml" | grep -v "^," | grep -i "${expr/#all/.*}")"
@@ -33,6 +44,11 @@ _build_single $board $shield $snippet $artifact *west_args:
     build_dir="{{ build / '$artifact_fs' }}"
 
     echo "Building firmware for $artifact..."
+
+    if [[ -z "${CMAKE_BUILD_PARALLEL_LEVEL:-}" ]]; then
+        export CMAKE_BUILD_PARALLEL_LEVEL="${ZMK_WORKSPACE_BUILD_JOBS:-2}"
+        echo "Using CMAKE_BUILD_PARALLEL_LEVEL=$CMAKE_BUILD_PARALLEL_LEVEL"
+    fi
 
     # Check if zephyr/module.yml exists to determine whether to include DZMK_EXTRA_MODULES
     if [[ -f "{{ zmk_config_root }}/zephyr/module.yml" ]]; then
@@ -53,6 +69,10 @@ _build_single $board $shield $snippet $artifact *west_args:
 build expr *west_args:
     #!/usr/bin/env bash
     set -euo pipefail
+    if [[ "${IN_ZMK_CONTAINER:-0}" != "1" && -z "${IN_NIX_SHELL:-}" ]]; then
+        exec just _container build "{{ expr }}" {{ west_args }}
+    fi
+
     targets=$(just _parse_targets {{ expr }})
 
     [[ -z $targets ]] && echo "No matching targets found. Aborting..." >&2 && exit 1
@@ -68,6 +88,26 @@ clean:
 clean-all: clean
     rm -rf .west zmk
 
+# show ccache statistics
+ccache-stats *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ "${IN_ZMK_CONTAINER:-0}" != "1" && -z "${IN_NIX_SHELL:-}" ]]; then
+        exec just _container ccache-stats {{ args }}
+    fi
+
+    ccache -s {{ args }}
+
+# clear ccache data
+clean-ccache:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ "${IN_ZMK_CONTAINER:-0}" != "1" && -z "${IN_NIX_SHELL:-}" ]]; then
+        exec just _container clean-ccache
+    fi
+
+    ccache -C
+
 # clear nix cache
 clean-nix:
     nix-collect-garbage --delete-old
@@ -76,6 +116,9 @@ clean-nix:
 init *config_path:
     #!/usr/bin/env bash
     set -euo pipefail
+    if [[ "${IN_ZMK_CONTAINER:-0}" != "1" && -z "${IN_NIX_SHELL:-}" ]]; then
+        exec just _container init {{ config_path }}
+    fi
 
     config_path="{{ config_path }}"
 
@@ -88,7 +131,7 @@ init *config_path:
         config_path=$(echo "$candidates" | fzf \
             --prompt="Select ZMK config: " \
             --header="Choose a configuration to initialize" \
-            --preview="ls -1a config/{}")
+            --preview="ls -1a {}")
 
         if [[ -z "$config_path" ]]; then
             echo "No config selected. Exiting..."
@@ -113,16 +156,29 @@ init *config_path:
 
 # list build targets
 list:
-    @just _parse_targets all | sed 's/,*$//' | sort | column
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ "${IN_ZMK_CONTAINER:-0}" != "1" && -z "${IN_NIX_SHELL:-}" ]]; then
+        exec just _container list
+    fi
+    just _parse_targets all | sed 's/,*$//' | sort | column
 
 # update west
 update:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ "${IN_ZMK_CONTAINER:-0}" != "1" && -z "${IN_NIX_SHELL:-}" ]]; then
+        exec just _container update
+    fi
     west update --fetch-opt=--filter=blob:none
 
 # draw keymap SVGs with keymap-drawer
-draw *names:
+draw-keymap *names:
     #!/usr/bin/env bash
     set -euo pipefail
+    if [[ "${IN_ZMK_CONTAINER:-0}" != "1" && -z "${IN_NIX_SHELL:-}" ]]; then
+        exec just _container draw-keymap {{ names }}
+    fi
 
     config_root="{{ zmk_config_root }}"
     keymap_dir="$config_root/keymap-drawer"
@@ -136,7 +192,7 @@ draw *names:
 
     requested=({{ names }})
     if [[ ${#requested[@]} -eq 0 ]]; then
-        mapfile -t requested < <(find "$config_root/config" -maxdepth 1 -type f -name "*.keymap" -printf "%f\n" | sed "s/\.keymap$//" | sort)
+        mapfile -t requested < <(find "$config_root/config" -maxdepth 1 -type f -name "*.keymap" -printf "%f\n" | sed "s/\\.keymap$//" | sort)
     fi
 
     if [[ ${#requested[@]} -eq 0 ]]; then
@@ -189,7 +245,6 @@ draw *names:
                 fi
             fi
         fi
-
         if [[ -z "$dtsi_file" ]] && [[ -d "{{ justfile_directory() }}/modules" ]]; then
             if [[ -f "$config_root/west.yml" ]]; then
                 west_yml="$config_root/west.yml"
@@ -213,7 +268,6 @@ draw *names:
             fi
             dtsi_file="${module_matches[0]:-}"
         fi
-
         if [[ -z "$dtsi_file" ]] && [[ -d "{{ justfile_directory() }}/zmk/app/boards" ]]; then
             mapfile -t zmk_matches < <(find "{{ justfile_directory() }}/zmk/app/boards" -type f \( -name "$name.dts" -o -name "$name.dtsi" -o -name "$name.overlay" \) 2>/dev/null | sort)
             if [[ ${#zmk_matches[@]} -gt 1 ]]; then
@@ -223,7 +277,6 @@ draw *names:
             fi
             dtsi_file="${zmk_matches[0]:-}"
         fi
-
         if [[ -z "$json_file" && -z "$dtsi_file" ]]; then
             echo "Physical layout source not found for '$name'" >&2
             exit 1
@@ -247,6 +300,9 @@ upgrade-sdk:
 flash expr *args:
     #!/usr/bin/env bash
     set -euo pipefail
+    if [[ "${IN_ZMK_CONTAINER:-0}" != "1" && -z "${IN_NIX_SHELL:-}" ]]; then
+        exec just _container flash "{{ expr }}" {{ args }}
+    fi
 
     # Check if -r option is provided
     rebuild=false
@@ -306,6 +362,10 @@ flash expr *args:
 test $testpath *FLAGS:
     #!/usr/bin/env bash
     set -euo pipefail
+    if [[ "${IN_ZMK_CONTAINER:-0}" != "1" && -z "${IN_NIX_SHELL:-}" ]]; then
+        exec just _container test "{{ testpath }}" {{ FLAGS }}
+    fi
+
     testcase=$(basename "$testpath")
     build_dir="{{ build / "tests" / '$testcase' }}"
     config_dir="{{ '$(pwd)' / '$testpath' }}"
