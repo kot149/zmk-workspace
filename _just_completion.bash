@@ -31,7 +31,7 @@ _just_completion() {
                 return
             fi
         fi
-    elif [[ "${COMP_WORDS[1]}" == "draw-keymap" ]]; then
+    elif [[ "${COMP_WORDS[1]}" == "draw" ]]; then
         if [[ -d "config" ]]; then
             local keymaps selected
             keymaps=$(find config -maxdepth 2 -type f -name "*.keymap" -printf "%f\n" | sed 's/\.keymap$//' | sort -u)

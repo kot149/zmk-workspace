@@ -48,7 +48,7 @@ Difference from urob's zmk-config:
    ```
 7. Draw keymap
    ```sh
-   just draw-keymap
+   just draw
    ```
    Generated files are written to `keymap-drawer/<name>.yaml` and `keymap-drawer/<name>.svg` under the active ZMK config.
 

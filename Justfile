@@ -120,7 +120,7 @@ update:
     west update --fetch-opt=--filter=blob:none
 
 # draw keymap SVGs with keymap-drawer
-draw-keymap *names:
+draw *names:
     #!/usr/bin/env bash
     set -euo pipefail
 
